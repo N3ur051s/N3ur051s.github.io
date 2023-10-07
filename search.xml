@@ -750,7 +750,7 @@
 <div class="highlight-container" data-rel="Golang"><figure class="iseeu highlight golang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">gcenable</span><span class="params">()</span></span> {</span><br><span class="line">	<span class="comment">// 启动后台清扫协程，与用户态代码并发被调度，归还从内存分配器中申请的内存</span></span><br><span class="line">	<span class="keyword">go</span> bgsweep(c)</span><br><span class="line">	<span class="comment">// 启动后台清除协程，与用户态代码并发被调度，归还从操作系统中申请的内存</span></span><br><span class="line">	<span class="keyword">go</span> bgscavenge(c)</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
 
 <p>在Go1.12-Go1.15，Go在释放内存的时候利用了Linux的MADV_FREE特性。 如果是MADV_FREE标记过的内存，内核会等到内存紧张时才释放。在被释放之前，这块内存依然可以复用。</p>
-<p>但在实践中这会导致我们看到的RSS指标不能完全匹配Go堆内存当前的占用量，给开发者造成很多困惑。在堆内存垃圾回收之后，RSS在短期内可能降不下来，但是在重启程序后这个现象又能缓解。由于这个特性会导致我们在查看指标时无法反应真实的内存占用量，所以Go.16之后默认就不再使用Linux的MADV_FREE特性了。</p>
+<p>但在实践中这会导致我们看到的RSS指标不能完全匹配Go堆内存当前的占用量，给开发者造成很多困惑。在堆内存垃圾回收之后，RSS在短期内可能降不下来，但是在重启程序后这个现象又能缓解。由于这个特性会导致我们在查看指标时无法反应真实的内存占用量，所以Go1.16之后默认就不再使用Linux的MADV_FREE特性了。</p>
 <h2 id="垃圾回收API"><a href="#垃圾回收API" class="headerlink" title="垃圾回收API"></a>垃圾回收API</h2><p>下面来看一看如何调节以及观察GC的行为。</p>
 <p>Go暴露了一些有限的与垃圾回收相关的API，用于调节垃圾回收的行为。 其中，Runtime.GC() 可以手动触发GC。同时我们还可以通过debug.SetGCPercent设置下一次触发GC的目标内存大小，以此调整垃圾回收的行为。在程序启动时设置环境变量GOGC也能达到这个目的。</p>
 <p>举个例子，在运行程序时设置GOGC=200，意味着下一次触发GC的目标内存大小比现在多2倍。而将GOGC设置为off甚至可以关闭GC的功能。</p>
