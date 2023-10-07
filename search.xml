@@ -123,7 +123,7 @@
 <h2 id="大语言模型情感分析解决方案"><a href="#大语言模型情感分析解决方案" class="headerlink" title="大语言模型情感分析解决方案"></a>大语言模型情感分析解决方案</h2><p>通过大语言模型来进行情感分析，最简单的方式就是利用它提供的Embedding这个API。这个API可以把任何你指定的一段文本，变成一个大语言模型下的向量，也就是用一组固定长度的参数来代表任何一段文本。</p>
 <p>我们需要提前计算“好评”和“差评”这两个字的Embedding。而对于任何一段文本评论，我们也都可以通过API拿到它的Embedding。那么，我们把这段文本的Embedding和“好评”以及“差评”通过余弦距离（Cosine Similarity）计算出它的相似度。然后我们拿这个Embedding和“好评”之间的相似度，去减去和“差评”之间的相似度，就会得到一个分数。如果这个分数大于0，那么说明我们的评论和“好评”的距离更近，我们就可以判断它为好评。如果这个分数小于0，那么就是离差评更近，我们就可以判断它为差评。</p>
 <p>下面我们就用这个方法分析一下两条在京东上购买了iPhone用户的评论。</p>
-<p><img lazyload="" src="/images/loading.svg" data-src="/../images/python/jd_pinjia.png" alt="图片"></p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/python/openAI/jd_pinjia.png" alt="图片"></p>
 <p>这个使用大模型的方法一共有20行代码，我们看看它能否帮助我们快速对这两条评论进行情感分析。</p>
 <div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> openai</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> openai.embeddings_utils <span class="keyword">import</span> cosine_similarity, get_embedding</span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取访问open ai的密钥</span></span><br><span class="line">openai.api_key = os.getenv(<span class="string">"OPENAI_API_KEY"</span>)</span><br><span class="line"><span class="comment"># 选择使用最小的ada模型</span></span><br><span class="line">EMBEDDING_MODEL = <span class="string">"text-embedding-ada-002"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取"好评"和"差评"的</span></span><br><span class="line">positive_review = get_embedding(<span class="string">"好评"</span>)</span><br><span class="line">negative_review = get_embedding(<span class="string">"差评"</span>)</span><br><span class="line"></span><br><span class="line">positive_example = get_embedding(<span class="string">"颜色很漂亮，性能优越，双卡很有效，物流迅速"</span>)</span><br><span class="line">negative_example = get_embedding(<span class="string">"买来就有瑕疵，不推荐"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_score</span>(<span class="params">sample_embedding</span>):</span><br><span class="line">  <span class="keyword">return</span> cosine_similarity(sample_embedding, positive_review) - cosine_similarity(sample_embedding, negative_review)</span><br><span class="line"></span><br><span class="line">positive_score = get_score(positive_example)</span><br><span class="line">negative_score = get_score(negative_example)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">"好评例子的评分 : %f"</span> % (positive_score))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">"差评例子的评分 : %f"</span> % (negative_score))</span><br></pre></td></tr></table></figure></div>
 
@@ -138,6 +138,21 @@
 <div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="code"><pre><span class="line">好评餐馆的评分 : <span class="number">0.062719</span></span><br><span class="line">差评餐馆的评分 : -<span class="number">0.074591</span></span><br></pre></td></tr></table></figure></div>
 
 <p>可以看到，虽然两句话分别是“太好吃”“不糟糕”和“太糟糕”“不好吃”，其实词语都一样，但是大语言模型一样能够帮助我们判断出来他们的含义是不同的，一个更接近好评，一个更接近差评。</p>
+<h2 id="更大的数据集上的案例"><a href="#更大的数据集上的案例" class="headerlink" title="更大的数据集上的案例"></a>更大的数据集上的案例</h2><p>再来拿一个真实的数据集验证一下，利用这种方法进行情感分析的准确率能够到多少。</p>
+<p>下面这段代码，是来自 OpenAI <a class="link" href="https://github.com/openai/openai-cookbook/blob/main/examples/data/fine_food_reviews_with_embeddings_1k.csv">Cookbook <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>。它是用同样的方法，来判断亚马逊提供的用户对一些食物的评价，这个评价数据里面，不只有用户给出的评论内容，还有用户给这些食物打了几颗星。这些几颗星的信息，正好可以拿来验证我们这个方法有多准。对于用户打出1～2星的，我们认为是差评，对于4～5星的，我们认为是好评。</p>
+<p>可以通过Pandas，将这个CSV数据读取到内存里面。为了避免重新调用OpenAI的API浪费钱，这个数据集里，已经将获取到的Embedding信息保存下来了，不需要再重新计算。</p>
+<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> classification_report</span><br><span class="line"></span><br><span class="line">datafile_path = <span class="string">"data/fine_food_reviews_with_embeddings_1k.csv"</span></span><br><span class="line"></span><br><span class="line">df = pd.read_csv(datafile_path)</span><br><span class="line">df[<span class="string">"embedding"</span>] = df.embedding.apply(<span class="built_in">eval</span>).apply(np.array)</span><br><span class="line"></span><br><span class="line"><span class="comment"># convert 5-star rating to binary sentiment</span></span><br><span class="line">df = df[df.Score != <span class="number">3</span>]</span><br><span class="line">df[<span class="string">"sentiment"</span>] = df.Score.replace({<span class="number">1</span>: <span class="string">"negative"</span>, <span class="number">2</span>: <span class="string">"negative"</span>, <span class="number">4</span>: <span class="string">"positive"</span>, <span class="number">5</span>: <span class="string">"positive"</span>})</span><br></pre></td></tr></table></figure></div>
+
+<p>每一条评论都用我们上面的方法，和一个预先设定好的好评和差评的文本去做对比，然后看它离哪个近一些。</p>
+<p>在计算完结果之后，利用Scikit-learn这个机器学习的库，将我们的预测值和实际用户打出的星数做个对比，然后输出对比结果。</p>
+<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> PrecisionRecallDisplay</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">evaluate_embeddings_approach</span>(<span class="params"></span></span><br><span class="line"><span class="params">    labels = [<span class="string">'negative'</span>, <span class="string">'positive'</span>],</span></span><br><span class="line"><span class="params">    model = EMBEDDING_MODEL,</span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    label_embeddings = [get_embedding(label, engine=model) <span class="keyword">for</span> label <span class="keyword">in</span> labels]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">label_score</span>(<span class="params">review_embedding, label_embeddings</span>):</span><br><span class="line">        <span class="keyword">return</span> cosine_similarity(review_embedding, label_embeddings[<span class="number">1</span>]) - cosine_similarity(review_embedding, label_embeddings[<span class="number">0</span>])</span><br><span class="line"></span><br><span class="line">    probas = df[<span class="string">"embedding"</span>].apply(<span class="keyword">lambda</span> x: label_score(x, label_embeddings))</span><br><span class="line">    preds = probas.apply(<span class="keyword">lambda</span> x: <span class="string">'positive'</span> <span class="keyword">if</span> x&gt;<span class="number">0</span> <span class="keyword">else</span> <span class="string">'negative'</span>)</span><br><span class="line"></span><br><span class="line">    report = classification_report(df.sentiment, preds)</span><br><span class="line">    <span class="built_in">print</span>(report)</span><br><span class="line"></span><br><span class="line">    display = PrecisionRecallDisplay.from_predictions(df.sentiment, probas, pos_label=<span class="string">'positive'</span>)</span><br><span class="line">    _ = display.ax_.set_title(<span class="string">"2-class Precision-Recall curve"</span>)</span><br><span class="line"></span><br><span class="line">evaluate_embeddings_approach(labels=[<span class="string">'An Amazon review with a negative sentiment.'</span>, <span class="string">'An Amazon review with a positive sentiment.'</span>])</span><br></pre></td></tr></table></figure></div>
+
+<p>输出结果：</p>
+<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="code"><pre><span class="line">              precision    recall  f1-score   support</span><br><span class="line">    negative       <span class="number">0.98</span>      <span class="number">0.73</span>      <span class="number">0.84</span>       <span class="number">136</span></span><br><span class="line">    positive       <span class="number">0.96</span>      <span class="number">1.00</span>      <span class="number">0.98</span>       <span class="number">789</span></span><br><span class="line">    accuracy                           <span class="number">0.96</span>       <span class="number">925</span></span><br><span class="line">   macro avg       <span class="number">0.97</span>      <span class="number">0.86</span>      <span class="number">0.91</span>       <span class="number">925</span></span><br><span class="line">weighted avg       <span class="number">0.96</span>      <span class="number">0.96</span>      <span class="number">0.96</span>       <span class="number">925</span></span><br></pre></td></tr></table></figure></div>
+
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/python/openAI/0ffa4e45899cd50bc5ac7e5ea0f89c3b.png" alt="图片"></p>
+<p>在结果里面可以看到，这个简单方法判定的好评差评的精度，也就是 precision 在 negative 和 positive里，分别是0.98和0.96，也就是在95%以上。</p>
+<p>而召回率，也就是图里的 recall，在差评里稍微欠缺一点，只有73%，这说明还是有不少差评被误判为了好评。不过在好评里，召回率则是100%，也就是100%的好评都被模型找到了。这样综合考虑下来的整体准确率，高达96%。而要达到这么好的效果，不需要进行任何机器学习训练，只需要调用一下大模型的接口，计算一下几个向量的相似度就好了。</p>
 <p>这种使用大语言模型的技巧，一般被称做零样本分类（Zero-Shot Classification）。</p>
 <p>所谓零样本分类，也就是不需要任何新的样本来训练机器学习的模型，就能进行分类。我们认为，之前经过预训练的大语言模型里面，已经蕴含了情感分析的知识。我们只需要简单利用大语言模型里面知道的“好评”和“差评”的概念信息，就能判断出它从未见过的评论到底是好评还是差评。</p>
 ]]></content>
@@ -524,7 +539,7 @@
       </tags>
   </entry>
   <entry>
-    <title>解析Python垃圾回收机制</title>
+    <title>浅析Python垃圾回收机制</title>
     <url>/2018/10/09/python_GC/</url>
     <content><![CDATA[<p>Python 程序在运行的时候，会需要在内存中开辟出一块空间，用于存放运行时产生的临时变量；计算完成后，再将结果输出到永久性存储器中。如果数据量过大，内存空间管理不善就很容易出现 OOM（out of memory），俗称爆内存，程序可能被操作系统中止。</p>
 <p>而对于服务器，这种设计为永不中断的系统来说，内存管理则显得更为重要，不然很容易引发内存泄漏。</p>
@@ -615,6 +630,147 @@
       </categories>
       <tags>
         <tag>Python</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>深入内存管理与垃圾回收</title>
+    <url>/2022/06/10/%E6%B7%B1%E5%85%A5%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%8E%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/</url>
+    <content><![CDATA[<p>Go 语言运行时依靠细微的对象切割、极致的多级缓存、精准的位图管理实现了对内存的精细化管理。下面就来看一看具体实现。</p>
+<h2 id="内存"><a href="#内存" class="headerlink" title="内存"></a><strong>内存</strong></h2><p>在计算机中，内存又叫做主存，通常指的是可寻址的半导体存储器（硅基MOS晶体管组成的集成电路）。内存可分为非易失性内存和易失性内存两种，非易失性内存主要用于存储特殊的程序（例如BIOS），易失性内存通常指的是RAM（Random Access Memory，随机存储器）。主要用于存储当前正在使用的数据和机器码。</p>
+<p>不管数据在物理内存的哪里，RAM几乎都允许在相同的时间内读取或写入数据。我们可以将物理内存视为下面这样的单元阵列，每一个单元可容纳8位的信息。每个内存单元都有一个地址，CPU可以通过寻址读取或者写入特定地址的数据。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/3c2a29dc8e1b729b23af27eeccf2c25f.jpg" alt="图片"></p>
+<p>不过，由于计算机通常会运行多个程序，每个程序都直接操作物理内存是非常危险的。例如，某程序可以读取其他程序所有的数据，或者A程序修改了B程序在内存中的数据。因此，为了提高资源的隔离性和安全性，出现了间接操作物理内存的技术：虚拟内存。</p>
+<h2 id="虚拟内存"><a href="#虚拟内存" class="headerlink" title="虚拟内存"></a>虚拟内存</h2><p>虚拟内存分为了许多的页（Page），分页的好处是可以对不同的页进行单独管理，设置不同的权限。页的大小因硬件而异，但通常为 4-64 KB。操作系统对内存进行操作时，并不是直接访问物理内存，而是访问虚拟内存。</p>
+<p>虚拟内存的出现让程序有了独占整个内存的错觉，但分配了虚拟内存并不意味着在RAM中就一定有对应的数据。当程序需要将数据写入某一片虚拟内存时，如果当前虚拟内存区域没有对应的物理内存，操作系统会触发缺页中断（page fault），从而实现延迟分配物理内存。</p>
+<p>操作系统还可以将一部分空闲的RAM置换到速度较慢的存储设备（例如磁盘）中，从而节省宝贵的RAM，获得更大的内存空间。然后在需要时再将数据加载到RAM中，这无疑扩展了整个机器能够使用内存的大小。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/5e1d08d4783b0a0dbf973ayy9e6d6752.jpg" alt="图片"></p>
+<p>为了实现虚拟内存，需要一种叫做内存管理单元（MMU）的芯片，它一般集成在CPU芯片内部。MMU将虚拟内存地址到物理内存地址的映射保存在页表（page table）中。MMU还有叫做 TLB（Translation Lookaside Buffer）的物理缓存，负责存储从虚拟内存到物理内存最新的转换，加快转换的速度。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/e97eb06ff7029f6caa966210b2dbff6a.jpg" alt="图片"></p>
+<p>假设程序尝试访问没有绑定RAM的虚拟内存地址，会发生以下过程。</p>
+<ol>
+<li>CPU发出访问虚拟地址的命令，MMU在页面表中检查该地址后禁止访问，因为尚未为该虚拟页面分配RAM。</li>
+<li>MMU将缺页中断发送到CPU。</li>
+<li>操作系统查找可用的RAM，并完成虚拟内存与物理内存之间的映射。</li>
+<li>如果没有可用的RAM，操作系统可以使用某种替换算法将现有的RAM转移到磁盘中。</li>
+</ol>
+<p>我们在谈论程序的内存分配时，一般讨论的是对虚拟内存的分配。不仅如此，还隐含着谈论的是堆内存的分配。 程序加载到进程中时，操作系统会将程序的内存主要分为下面几个区域。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/7a3f129dd1c328665364fe38246a0804.jpg" alt="图片"></p>
+<ul>
+<li>text区域：包含程序的指令、文字和静态常量，所在内存区域通常被MMU设置为只读，以保护代码段不会被意外改写。</li>
+<li>data区域：通常是指用来存放程序中已初始化且不为0的全局变量的一块内存区域。</li>
+<li>stack区域：程序栈，它会随着栈的增长而增长。</li>
+<li>heap区域：与stack区域相向增长，可由用户动态分配。</li>
+</ul>
+<p>可以发现，在程序的内存中，能够灵活变动的内存就是堆和栈了。但是栈的管理一般是由操作系统完成的，可以动态地增长和释放，一般开发者不用关心。而堆区的变量通常是由用户手动分配和释放的，它一般占用的内存也最多。所以我们提到内存分配时，通常指的是堆内存的分配。</p>
+<h2 id="内存分配算法概要"><a href="#内存分配算法概要" class="headerlink" title="内存分配算法概要"></a>内存分配算法概要</h2><p>前面提到内存的分配一般指的是虚拟内存的分配，而且常指堆内存的分配。一般高级语言会有一些API帮助开发者分配和释放内存（例如C语言中的malloc/free函数），Go语言则更加灵活，内存是否分配到堆区会先经过编译器检测再做决定，这被称为内存逃逸分析，并且运行时有自动的垃圾回收机制。</p>
+<p>一个好的内存分配算法应当具有下面三个特征：</p>
+<ul>
+<li>能够快速分配和释放</li>
+<li>内存开销小</li>
+<li>可以避免碎片化</li>
+</ul>
+<p>知名的内存分配算法也有很多，例如K&amp;R malloc、Region-based allocator、Buddy allocator、Slab allocator 等。很难说哪一种算法是占有绝对优势的，因为它们都有特定的目标。</p>
+<p>以 <a class="link" href="https://en.wikipedia.org/wiki/Buddy_memory_allocation">Buddy allocator <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a> 为例，它分配的内存大小都必须是<mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: 0;" xmlns="http://www.w3.org/2000/svg" width="2.279ex" height="1.528ex" role="img" focusable="false" viewBox="0 -675.5 1007.3 675.5"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msup"><g data-mml-node="mn"><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"></path></g><g data-mml-node="TeXAtom" transform="translate(533,363) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D45B" d="M21 287Q22 293 24 303T36 341T56 388T89 425T135 442Q171 442 195 424T225 390T231 369Q231 367 232 367L243 378Q304 442 382 442Q436 442 469 415T503 336T465 179T427 52Q427 26 444 26Q450 26 453 27Q482 32 505 65T540 145Q542 153 560 153Q580 153 580 145Q580 144 576 130Q568 101 554 73T508 17T439 -10Q392 -10 371 17T350 73Q350 92 386 193T423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 180T152 343Q153 348 153 366Q153 405 129 405Q91 405 66 305Q60 285 60 284Q58 278 41 278H27Q21 284 21 287Z"></path></g></g></g></g></g></svg></mjx-container>字节，这意味着分配17个字节，实际上需要消耗32字节的空间，看起来非常浪费内存。但是这种分配方法却可以预先将大的内存分为多个预置的内存块，让分配和释放都非常快。</p>
+<p>现代的内存分配算法还会充分考虑并发分配的速度、CPU核心增加带来的扩展性、缓存等因素。</p>
+<p>Go语言采用了现代的TCmalloc算法作为它内存分配的指导思想。TCmalloc算法的核心思路之一是将内存分成若干级别不同的内存块。和Buddy allocator类似，TCmalloc会将对象的内存映射到最接近的内存块，因此也会有内存浪费的问题。但是由于它提前划分了若干级别的内存块，并且将它们缓存了起来，这就让程序可以进行并发的无锁访问，大大提升了并发分配的性能。同时，TCmalloc还能有效减少内存碎片。</p>
+<p>下面详细来看一看Go运行时的内存分配细节。</p>
+<h2 id="Go内存分配算法原理"><a href="#Go内存分配算法原理" class="headerlink" title="Go内存分配算法原理"></a>Go内存分配算法原理</h2><p>Go 语言将内存分成了大大小小67个级别的span。其中，0 级代表特殊的大对象，它的大小是不固定的。每一个span中又包含了多个元素。当具体的对象需要分配内存时，并不是直接分配span，而是分配不同级别的span中的元素。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/306313a1f037c02ef33e425b65dc42c8.jpg" alt="图片"></p>
+<p>每个 span 的大小和 span 中元素的个数都不是固定的。例如第 1 级 span 中的元素大小为 8 字节，span大小为8192字节，所以第1级 span 拥有的元素个数为8192/8 = 1024个。第65级span的大小为57344 字节，每个元素的大小为 28672 字节，元素个数为2。</p>
+<p>每个具体的对象都需要被分配到对应大小的span上，例如我们要分配 17 字节的对象，会将其分配到比17 字节大同时又最接近它的span等级，即第3级，这就导致它最终被分配了32字节。这种分配方式不可避免地会带来一些内存的浪费。</p>
+<p>为了能够方便地对span进行管理，加速span对象的访问和分配，Go 语言采取了三级管理结构，分别是mcache、mcentral和mheap。</p>
+<p>Go 语言采用了现代TCMalloc 内存分配算法的思想，每个逻辑处理器 P 都存储了一个本地span 缓存，称作mcache。如果协程需要内存，可以直接从 mcache 中获取。由于在同一时间只有一个协程运行在逻辑处理器P上，所以中间不需要加锁。</p>
+<p>mcache包含所有大小规格的span各一个。除class0 外，mcache 的 span 都来自mcentral。每个mcentral 都包含两个 mspan 的链表：empty List 表示没有空闲对象的 span 链表，nonempty List 表示有空闲对象的span链表。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/aa9a0b877427b321150d2ff8d0a74373.jpg" alt="图片"></p>
+<p>mheap 的作用不只是管理central，大对象也会直接通过 mheap 进行分配。mheap 实现了对虚拟内存地址空间的精准管理，建立了 span 与具体虚拟地址空间的联系，保存了分配的位图信息，是管理内存的最核心单元，mheap对内存进行的操作必须全局加锁。</p>
+<p>根据对象的大小，Go 语言将堆内存分成了heapArena、chunk、span 与page 4种内存块进行管理。其中，heapArena 内存块最大，在Unix 64 位操作系统中占据了64MB。chunk 占据了512KB，span 根据级别大小的不同而不同，但必须是page的倍数，而 1 个page 占据8KB。不同的内存块用于不同的场景，便于高效地对内存进行管理。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/5ce7c24f4dce32010162d8d927dfb7c6.jpg" alt="图片"></p>
+<p>不同大小的对象会被分配到不同的 span 中。运行时分配对象的逻辑主要位于mallocgc 函数中。malloc 代表分配，gc 代表垃圾回收（GC），这个函数除了分配内存还会为垃圾回收做一些位图标记工作。</p>
+<div class="highlight-container" data-rel="Golang"><figure class="iseeu highlight golang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">mallocgc</span><span class="params">(size <span class="type">uintptr</span>, typ *_type, needzero <span class="type">bool</span>)</span></span> unsafe.Pointer {</span><br><span class="line">	<span class="comment">// 判断是否为小对象, maxSmallSize 当前为32KB</span></span><br><span class="line">	<span class="keyword">if</span> size &lt;= maxSmallSize {</span><br><span class="line">		<span class="keyword">if</span> noscan &amp;&amp; size &lt; maxTinySize {</span><br><span class="line">			<span class="comment">// 微小对象分配</span></span><br><span class="line">		} <span class="keyword">else</span> {</span><br><span class="line">			<span class="comment">// 小对象分配</span></span><br><span class="line">		} <span class="keyword">else</span>{</span><br><span class="line">			<span class="comment">// 大对象分配</span></span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
+
+<p>内存分配时，将按照对象的大小不同划分为微小（tiny）对象、小对象和大对象。微小对象的分配流程最长，逻辑链路最复杂。由于微小对象的分配和小对象、大对象的分配流程类似，所以就以微小对象为例，看看对象的分配流程。</p>
+<ul>
+<li>微小对象会被放入 class 为 2 的 span 中的某一个元素中。如果当前要分配的元素空间不够，运行时将尝试从 mcache 中查找 span 中下一个可用的元素。</li>
+<li>如果当前的 span 中没有可以使用的元素，这时就需要从 mcentral 中加锁查找了。之前提过，mcentral 中有两种类型的 span 链表，分别是有空闲元素的 nonempty 链表和没有空闲元素的empty链表。在 mcentral 中查找时，会分别遍历这两个链表，查找是否有可用的span。既然没有空闲元素的 empty 链表，为什么还需要遍历呢？这是因为可能有些 span 虽然已经被垃圾回收器标记为空闲了，但是还没有来得及清理，这些span 在清扫后仍然是可以使用的。</li>
+<li>如果在 mcentral 中找不到可以使用的span，就需要在 mheap 中查找了。Go 1.12 采用 Treap 结构进行内存管理，Treap 是一种引入了随机数的二叉搜索树。它的实现简单，引入的随机数和必要时的旋转保证了比较好的平衡性。但是Treap有扩展性的问题，因为内存是在 mheap 管理的，所以在操作它时需要维持一个锁。这在密集的对象分配及逻辑处理器P 过多时，会导致更长的等待时间。因此在Go 1.14之后，在每个逻辑处理器 P 中都维护了一份Page Cache。</li>
+<li>Go 1.14之后，如果要分配的 page 过大或者在逻辑处理器 P 的Cache 中没有找到可用的page，就需要对mheap 加锁，并在 mheap 管理的整个虚拟地址空间的位图中查找是否有可用的page。这涉及 Go 语言对虚拟地址空间的位图管理，这种管理方式也被称为基数树。</li>
+</ul>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/0be29ca65feea4d53cbdfb8a2af0b468.jpg" alt="图片"></p>
+<ul>
+<li>基数树中的每个节点都对应一个pallocSum，最底层的叶子节点对应的 pallocSum 包含一个 chunk 的信息（512×8KB），除叶子节点外的节点都包含连续 8 个子节点的内存信息。例如， 倒数第 2 层的节点包含连续 8 个叶子节点（即8×chunk）的内存信息。因此，越上层的节点对应的内存越多。pallocSum 是一个简单的uint64，分为开头（start）、中间（max）、末尾（end）三部分，pallocSum 的开头与末尾部分各占21bit，中间部分占22bit，它们分别包含了这个区域中连续空闲内存页的信息。对于最顶层的节点，由于其 max 位为22bit，因此一棵完整的基数树最多代表<mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: 0;" xmlns="http://www.w3.org/2000/svg" width="2.919ex" height="1.887ex" role="img" focusable="false" viewBox="0 -833.9 1290.1 833.9"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msup"><g data-mml-node="mn"><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"></path></g><g data-mml-node="TeXAtom" transform="translate(533,363) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mn"><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"></path><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z" transform="translate(500,0)"></path></g></g></g></g></g></svg></mjx-container> pages=16GB 内存。</li>
+<li>如果在基数树中查找不到可用的连续内存，就需要从操作系统中获取内存了。在Unix 操作系统中，最终使用了mmap 系统调用向操作系统申请内存，每一次向操作系统申请的内存大小必须为heapArena 的倍数。在64 位Unix 操作系统中，heapArena 的大小为64MB。这意味着即便需要的内存很小，最终也至少要向操作系统申请64MB 内存。多申请的内存可以用于下次分配。Go 语言中对 heapArena 有精准的管理，每个指针的内存信息，每个page 对应的 span 信息都有记录。</li>
+</ul>
+<h2 id="垃圾回收"><a href="#垃圾回收" class="headerlink" title="垃圾回收"></a>垃圾回收</h2><p>当分配的内存不再被使用时，就需要进行垃圾回收（Garbage Collection，GC）了。垃圾回收屏蔽了复杂而且容易犯错的操作，让开发变得更加简单。</p>
+<p>Go 语言的垃圾回收算法叫作 <strong>并发三色标记-清扫算法</strong>。标记-清扫算法顾名思义分为两个主要阶段，第一阶段是扫描并标记当前活着的对象，第二阶段是清扫没有被标记的垃圾对象。</p>
+<p>在标记阶段，我们要将对象标记为黑色、灰色、白色三种类型。其中黑色代表已经被扫描了；灰色对象已经被黑色对象所引用，但是暂时还没有被扫描，被扫描之后会转换为黑色；白色也暂时没有被扫描，但是它内部可能有垃圾对象，如果之后被灰色对象扫描到，则会转为灰色。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/979cd1f52c1dfaf4efa56311f37bf10b.jpg" alt="图片"></p>
+<h3 id="垃圾回收算法的演进"><a href="#垃圾回收算法的演进" class="headerlink" title="垃圾回收算法的演进"></a><strong>垃圾回收算法的演进</strong></h3><p>Go的垃圾回收经历了长时间的演进过程。下图为Go 1.0 的单协程垃圾回收，在垃圾回收开始阶段，需要停止所有的用户协程，并且在垃圾回收阶段只有一个协程执行垃圾回收。</p>
+<p>Go 1.1 之后，垃圾回收开始由多个协程并行执行，这就大大加快了垃圾回收的速度，但是在标记阶段仍然不允许用户协程运行。</p>
+<p>Go 1.5 对垃圾回收进行了重大更新，该版本允许用户协程与后台的垃圾回收协程同时执行，大大降低了用户协程暂停的时间（从 300ms 左右降低到 40ms 左右）。</p>
+<p>Go 1.5 发布半年后，Go 1.6 大幅度减少了在STW（Stop The World）期间的任务，使得用户协程暂停的时间从 40ms 左右降到了 5ms 左右。</p>
+<p>接着，Go 1.8 使用了混合写屏障技术消除了栈重新扫描的时间，将用户协程暂停的时间降低到0.5ms左右。这使得STW的时间大大减少，在实践中，一般不用再考虑STW带来的延迟。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/ba4fffccbab0429978cfa4f968548a62.jpg" alt="图片"></p>
+<h3 id="垃圾回收流程"><a href="#垃圾回收流程" class="headerlink" title="垃圾回收流程"></a>垃圾回收流程</h3><p>Go 语言的垃圾回收循环大致会经历下图中的几个阶段。当内存到达了垃圾回收的阈值后，将触发新一轮的垃圾回收。之后会先后经历标记准备阶段、并行标记阶段、标记终止阶段和垃圾清扫阶段。在并行标记阶段，Go 语言引入了辅助标记技术，在垃圾清扫阶段，还引入了辅助清扫技术、系统驻留内存清除技术。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/2a7f8b477c446ed2f5b035eb0dfc9bc4.jpg" alt="图片"></p>
+<p>下面简单看一下各个阶段。</p>
+<ul>
+<li><strong>标记准备阶段</strong></li>
+</ul>
+<p>标记准备阶段最重要的任务是清扫上一阶段 GC 遗留的需要清扫的对象，因为使用了懒清扫算法，所以当执行下一次 GC 时，可能还有垃圾对象没有被清扫。同时，标记准备阶段会重置各种状态和统计指标，启动专门用于标记的协程，统计需要扫描的任务数量，开启写屏障，启动标记协程等。标记准备阶段会计算当前后台需要开启多少标记协程。目前，Go 语言规定后台标记的协程消耗的 CPU 应该接近25%，也就是说，如果有4个逻辑处理器P，那么会分配1个P完全执行标记工作。</p>
+<ul>
+<li><strong>并发标记阶段</strong></li>
+</ul>
+<p>并发标记阶段会将整个程序的内存扫描一遍，识别出正在使用的内存，并间接地发现未使用的内存。</p>
+<p>后台标记协程可以与执行用户代码的协程并行执行。Go 语言的目标是，让后台标记协程占用 CPU 的时间在25%左右，最大限度地避免因执行 GC 而中断或减慢用户协程的执行。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/254f523dda415393587d3d716fb1aa18.jpg" alt="图片"></p>
+<ul>
+<li><strong>标记终止阶段</strong></li>
+</ul>
+<p>在并发标记阶段，扫描和标记完所有灰色对象之后，就进入到了标记终止阶段。标记终止阶段主要统计一些指标，例如GC用时、GC的次数，并会计算下一次触发 GC 需要达到的堆目标，关闭写屏障，并唤醒后台清扫协程开始下一阶段的清扫工作。</p>
+<p>其中最重要任务就是计算下一次触发 GC 时需要达到的堆目标，这叫作垃圾回收的调步算法。调步算法是Go 1.5 提出的，由于从Go 1.5 开始使用并发的三色标记，在GC 从开始到结束的过程中，用户协程可能被分配了大量的内存，所以在 GC 的过程中，程序占用的内存大小实际上超过了我们设定的触发 GC 的目标。为了解决这个问题，我们需要对程序进行估计，在达到目标内存之前就启动GC，并保证在 GC 结束之后，占用内存的大小刚好在目标内存附近。</p>
+<p><img lazyload="" src="/images/loading.svg" data-src="/../images/golang/gc/942f235b525e0e8200a5429e798f4f93.jpg" alt="图片"></p>
+<p>因此，调步算法最重要的任务就是估计出下一次触发 GC 的最佳时机。</p>
+<ul>
+<li><strong>辅助标记技术</strong></li>
+</ul>
+<p>Go 1.5 引入了并发标记后，带来了许多新的问题。例如，在并发标记阶段，扫描内存的同时用户协程也在不断被分配内存，当用户协程的内存分配速度快到后台标记协程来不及扫描时，GC 标记阶段将永远不会结束，这就无法完成完整的 GC 周期，容易导致内存泄漏。为了解决这样的问题，Go 引入了辅助标记算法。辅助标记在垃圾回收的并发标记阶段进行，当用户协程分配了超过限度的内存时，用户协程将不得不暂停并切换到辅助标记工作。</p>
+<ul>
+<li><strong>垃圾清扫阶段</strong></li>
+</ul>
+<p>垃圾标记工作全部完成就意味着已经追踪到了内存中所有活着的对象，之后就进入垃圾清扫阶段了。垃圾清扫阶段的目的是将垃圾对象的内存回收重用，或返还给操作系统。垃圾清扫采取了懒清扫的策略，即执行少量清扫工作后，通过Gosched 函数让渡自己的执行权利，不需要一直执行。因此当触发下一阶段的垃圾回收后，可能存在没有被清理的内存。下一阶段的垃圾回收需要先将这些内存清理完。</p>
+<ul>
+<li><strong>辅助清扫技术</strong></li>
+</ul>
+<p>我们已经知道，清扫是通过懒清扫的形式进行的。因此，在下次触发 GC 时，必须将上一次 GC 未清扫的 span 全部扫描一遍。如果剩余未清扫的 span 太多，会大大推迟下一次 GC 开始的时间。</p>
+<p>为了规避这一问题，Go 语言使用了辅助清扫技术，它是在Go 1.5 之后，和并发GC同时推出的。辅助清扫的意思是，工作协程必须在适当的时机执行辅助清扫工作，以避免下一次 GC 发生时还有大量未清扫的span。判断是否需要清扫的最好时机是在工作协程分配内存时。</p>
+<ul>
+<li><strong>系统驻留内存清除技术</strong></li>
+</ul>
+<p>此外，垃圾清扫过程中还引入过系统驻留内存清除技术。驻留内存（RSS）是进程占用的实际物理内存（RAM）。为了将系统分配的内存保持在适当的大小，同时回收不再被使用的内存，Go 语言使用了单独的后台清扫协程来清除内存。</p>
+<div class="highlight-container" data-rel="Golang"><figure class="iseeu highlight golang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">gcenable</span><span class="params">()</span></span> {</span><br><span class="line">	<span class="comment">// 启动后台清扫协程，与用户态代码并发被调度，归还从内存分配器中申请的内存</span></span><br><span class="line">	<span class="keyword">go</span> bgsweep(c)</span><br><span class="line">	<span class="comment">// 启动后台清除协程，与用户态代码并发被调度，归还从操作系统中申请的内存</span></span><br><span class="line">	<span class="keyword">go</span> bgscavenge(c)</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
+
+<p>在Go1.12-Go1.15，Go在释放内存的时候利用了Linux的MADV_FREE特性。 如果是MADV_FREE标记过的内存，内核会等到内存紧张时才释放。在被释放之前，这块内存依然可以复用。</p>
+<p>但在实践中这会导致我们看到的RSS指标不能完全匹配Go堆内存当前的占用量，给开发者造成很多困惑。在堆内存垃圾回收之后，RSS在短期内可能降不下来，但是在重启程序后这个现象又能缓解。由于这个特性会导致我们在查看指标时无法反应真实的内存占用量，所以Go.16之后默认就不再使用Linux的MADV_FREE特性了。</p>
+<h2 id="垃圾回收API"><a href="#垃圾回收API" class="headerlink" title="垃圾回收API"></a>垃圾回收API</h2><p>下面来看一看如何调节以及观察GC的行为。</p>
+<p>Go暴露了一些有限的与垃圾回收相关的API，用于调节垃圾回收的行为。 其中，Runtime.GC() 可以手动触发GC。同时我们还可以通过debug.SetGCPercent设置下一次触发GC的目标内存大小，以此调整垃圾回收的行为。在程序启动时设置环境变量GOGC也能达到这个目的。</p>
+<p>举个例子，在运行程序时设置GOGC=200，意味着下一次触发GC的目标内存大小比现在多2倍。而将GOGC设置为off甚至可以关闭GC的功能。</p>
+<div class="highlight-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">GOGC=off ./main</span><br></pre></td></tr></table></figure></div>
+
+<p>在程序启动时设置GODEBUG=gctrace=1，运行时会打印出GC的一些关键指标。</p>
+<div class="highlight-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">GODEBUG=gctrace=1 ./project</span><br></pre></td></tr></table></figure></div>
+
+<p>打印的结果如下所示。</p>
+<div class="highlight-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">gc 3 @3.182s 0%: 0.015+0.59+0.096 ms clock, 0.19+0.10/1.3/3.0+1.1 ms cpu, 4-&gt;4-&gt;2 MB, 5 MB goal, 12 P</span><br><span class="line">...</span><br><span class="line">gc 2553 @8.452s 14%: 0.004+0.33+0.051 ms clock, 0.056+0.12/0.56/0.94+0.61 ms cpu, 4-&gt;4-&gt;2 MB, 5 MB goal, 12 P</span><br></pre></td></tr></table></figure></div>
+
+<p>打印指标的具体含义可以查看 <a class="link" href="https://www.ardanlabs.com/blog/2019/05/garbage-collection-in-go-part2-gctraces.html">这篇文章 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>。</p>
+<p>另外，还有一个查看GC的利器是 go tool trace 工具，它可以用可视化的方式展示出程序堆内存的变化量。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Go 语言运行时依靠细微的对象切割，极致的多级缓存，精准的位图管理实现了对内存的精细化管理以及快速的内存访问。同时Go采用了并发三色标记实现了内存的标记和清扫，将STW的时间降低到了ms级以下，极大降低了GC对用户协程的影响。</p>
+]]></content>
+      <categories>
+        <category>Golang</category>
+      </categories>
+      <tags>
+        <tag>Golang</tag>
       </tags>
   </entry>
 </search>

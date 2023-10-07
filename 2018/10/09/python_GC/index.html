@@ -20,7 +20,7 @@
     
         <meta name="description" content="Python 程序在运行的时候，会需要在内存中开辟出一块空间，用于存放运行时产生的临时变量；计算完成后，再将结果输出到永久性存储器中。如果数据量过大，内存空间管理不善就很容易出现 OOM（out of memory），俗称爆内存，程序可能被操作系统中止。 而对于服务器，这种设计为永不中断的系统来说，内存管理则显得更为重要，不然很容易引发内存泄漏。  这里的泄漏是指程序本身没有设计好，导致程序未能释">
 <meta property="og:type" content="article">
-<meta property="og:title" content="解析Python垃圾回收机制">
+<meta property="og:title" content="浅析Python垃圾回收机制">
 <meta property="og:url" content="https://n3ur051s.github.io/2018/10/09/python_GC/index.html">
 <meta property="og:site_name" content="N3ur051s&#39;s Blog">
 <meta property="og:description" content="Python 程序在运行的时候，会需要在内存中开辟出一块空间，用于存放运行时产生的临时变量；计算完成后，再将结果输出到永久性存储器中。如果数据量过大，内存空间管理不善就很容易出现 OOM（out of memory），俗称爆内存，程序可能被操作系统中止。 而对于服务器，这种设计为永不中断的系统来说，内存管理则显得更为重要，不然很容易引发内存泄漏。  这里的泄漏是指程序本身没有设计好，导致程序未能释">
@@ -28,7 +28,7 @@
 <meta property="og:image" content="https://n3ur051s.github.io/images/python/gc/fc3b0355ecfdbac5a7b48aa014208aae.png">
 <meta property="og:image" content="https://n3ur051s.github.io/images/python/gc/9228289bac4976cfa9b11e08c05a7a27.png">
 <meta property="article:published_time" content="2018-10-09T12:13:10.000Z">
-<meta property="article:modified_time" content="2023-10-06T05:50:23.619Z">
+<meta property="article:modified_time" content="2023-10-06T06:00:46.770Z">
 <meta property="article:author" content="N3ur051s">
 <meta property="article:tag" content="Python">
 <meta name="twitter:card" content="summary">
@@ -44,7 +44,7 @@
     
     <title>
         
-            解析Python垃圾回收机制 -
+            浅析Python垃圾回收机制 -
         
         N3ur051s&#39;s Blog
     </title>
@@ -252,7 +252,7 @@
 
         <div class="article-title">
             
-                <h1 class="article-title-regular">解析Python垃圾回收机制</h1>
+                <h1 class="article-title-regular">浅析Python垃圾回收机制</h1>
             
             </div>
             
@@ -281,8 +281,8 @@
     
         <span class="article-date article-meta-item">
             <i class="fa-regular fa-wrench"></i>&nbsp;
-            <span class="desktop">2023-10-06 13:50:23</span>
-            <span class="mobile">2023-10-06 13:50:23</span>
+            <span class="desktop">2023-10-06 14:46</span>
+            <span class="mobile">2023-10-06 14:46</span>
             <span class="hover-info">Updated</span>
         </span>
     
@@ -426,14 +426,14 @@
             <div class="post-copyright-info">
                 <div class="article-copyright-info-container">
     <ul>
-        <li><strong>Title:</strong> 解析Python垃圾回收机制</li>
+        <li><strong>Title:</strong> 浅析Python垃圾回收机制</li>
         <li><strong>Author:</strong> N3ur051s</li>
         <li><strong>Created at
                 :</strong> 2018-10-09 20:13:10</li>
         
             <li>
                 <strong>Updated at
-                    :</strong> 2023-10-06 13:50:23
+                    :</strong> 2023-10-06 14:00:46
             </li>
         
         <li>
@@ -556,7 +556,7 @@
             <div class="post-toc-wrap">
     <div class="post-toc">
         <div class="toc-title">On this page</div>
-        <div class="page-title">解析Python垃圾回收机制</div>
+        <div class="page-title">浅析Python垃圾回收机制</div>
         <ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A1%E6%95%B0%E5%BC%95%E7%94%A8"><span class="nav-text">计数引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%AA%E7%8E%AF%E5%BC%95%E7%94%A8"><span class="nav-text">循环引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F"><span class="nav-text">调试内存泄漏</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a></li></ol>
 
     </div>
