@@ -13,25 +13,28 @@
     
     <!--- Seo Part-->
     
-    <link rel="canonical" href="https://n3ur051s.github.io/2017/09/16/python_gil/"/>
+    <link rel="canonical" href="https://n3ur051s.github.io/2022/09/12/消息队列的概念与对比/"/>
     <meta name="robots" content="index,follow">
     <meta name="googlebot" content="index,follow">
     <meta name="revisit-after" content="1 days">
     
-        <meta name="description" content="提出一个小问题从下方很简单的 cpu-bound 代码入手： 123def CountDown(n):    while n &gt; 0:        n -&#x3D; 1 现在，假设一个很大的数字 n &#x3D; 100000000，先来试试单线程的情况下执行 CountDown(n)。使用 8 核的 MacBook 上执行后，发现它的耗时为 5.4s。这时，我们想要用多线程来加速，比如下面这几行">
+        <meta name="description" content="什么时候会用到消息队列？首先从使用者的角度，来看看什么情况下会用到消息队列。 在系统架构中，消息队列的定位就是 总线和管道，主要起到解耦上下游系统、数据缓存的作用。它不像数据库，会有很多计算、聚合、查询的逻辑，它的主要操作就是 生产和消费。所以，在业务中不管是使用哪款消息队列，核心操作永远是生产和消费数据。 一般情况下，会在需要解耦上下游系统、对数据有缓冲缓存需求或者需要用到消息队列的某些功能（比">
 <meta property="og:type" content="article">
-<meta property="og:title" content="浅析Python GIL（全局解释器锁）">
-<meta property="og:url" content="https://n3ur051s.github.io/2017/09/16/python_GIL/index.html">
+<meta property="og:title" content="主流消息队列中的基础概念与对比">
+<meta property="og:url" content="https://n3ur051s.github.io/2022/09/12/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E7%9A%84%E6%A6%82%E5%BF%B5%E4%B8%8E%E5%AF%B9%E6%AF%94/index.html">
 <meta property="og:site_name" content="N3ur051s&#39;s Blog">
-<meta property="og:description" content="提出一个小问题从下方很简单的 cpu-bound 代码入手： 123def CountDown(n):    while n &gt; 0:        n -&#x3D; 1 现在，假设一个很大的数字 n &#x3D; 100000000，先来试试单线程的情况下执行 CountDown(n)。使用 8 核的 MacBook 上执行后，发现它的耗时为 5.4s。这时，我们想要用多线程来加速，比如下面这几行">
+<meta property="og:description" content="什么时候会用到消息队列？首先从使用者的角度，来看看什么情况下会用到消息队列。 在系统架构中，消息队列的定位就是 总线和管道，主要起到解耦上下游系统、数据缓存的作用。它不像数据库，会有很多计算、聚合、查询的逻辑，它的主要操作就是 生产和消费。所以，在业务中不管是使用哪款消息队列，核心操作永远是生产和消费数据。 一般情况下，会在需要解耦上下游系统、对数据有缓冲缓存需求或者需要用到消息队列的某些功能（比">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://n3ur051s.github.io/images/python/python_gil.png">
-<meta property="article:published_time" content="2017-09-16T02:17:16.000Z">
-<meta property="article:modified_time" content="2023-09-30T08:23:10.646Z">
+<meta property="og:image" content="https://n3ur051s.github.io/images/mq/2cb1c8245c15f3df28228af3c8b8bd8c.jpg">
+<meta property="og:image" content="https://n3ur051s.github.io/images/mq/845c85d7f3d55cd47c894f0b8eb7ab06.jpg">
+<meta property="og:image" content="https://n3ur051s.github.io/images/mq/fcd8ca1618bb823a675668d61e765e7f.jpg">
+<meta property="og:image" content="https://n3ur051s.github.io/images/mq/f7d38df79c7d41630f64c54a16e16b2c.jpg">
+<meta property="article:published_time" content="2022-09-12T10:10:00.000Z">
+<meta property="article:modified_time" content="2023-10-09T15:21:48.422Z">
 <meta property="article:author" content="N3ur051s">
-<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Message Queue">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://n3ur051s.github.io/images/python/python_gil.png">
+<meta name="twitter:image" content="https://n3ur051s.github.io/images/mq/2cb1c8245c15f3df28228af3c8b8bd8c.jpg">
     
     
     <!--- Icon Part-->
@@ -43,7 +46,7 @@
     
     <title>
         
-            浅析Python GIL（全局解释器锁） -
+            主流消息队列中的基础概念与对比 -
         
         N3ur051s&#39;s Blog
     </title>
@@ -313,7 +316,7 @@
 
         <div class="article-title">
             
-                <h1 class="article-title-regular">浅析Python GIL（全局解释器锁）</h1>
+                <h1 class="article-title-regular">主流消息队列中的基础概念与对比</h1>
             
             </div>
             
@@ -335,15 +338,15 @@
                         <div class="article-meta-info">
     <span class="article-date article-meta-item">
         <i class="fa-regular fa-pen-fancy"></i>&nbsp;
-        <span class="desktop">2017-09-16 10:17:16</span>
-        <span class="mobile">2017-09-16 10:17:16</span>
+        <span class="desktop">2022-09-12 18:10</span>
+        <span class="mobile">2022-09-12 18:10</span>
         <span class="hover-info">Created</span>
     </span>
     
         <span class="article-date article-meta-item">
             <i class="fa-regular fa-wrench"></i>&nbsp;
-            <span class="desktop">2023-09-30 16:23:10</span>
-            <span class="mobile">2023-09-30 16:23:10</span>
+            <span class="desktop">2023-10-09 23:21:48</span>
+            <span class="mobile">2023-10-09 23:21:48</span>
             <span class="hover-info">Updated</span>
         </span>
     
@@ -357,7 +360,7 @@
                     
                         
                         <li>
-                            <a href="/categories/Python/">Python</a>&nbsp;
+                            <a href="/categories/Message-Queue/">Message Queue</a>&nbsp;
                         </li>
                     
                     
@@ -371,7 +374,7 @@
             <ul>
                 
                     <li>
-                        <a href="/tags/Python/">Python</a>&nbsp;
+                        <a href="/tags/Message-Queue/">Message Queue</a>&nbsp;
                     </li>
                 
             </ul>
@@ -397,54 +400,118 @@
 
 
         <div class="article-content markdown-body">
-            <h3 id="提出一个小问题"><a href="#提出一个小问题" class="headerlink" title="提出一个小问题"></a>提出一个小问题</h3><p>从下方很简单的 cpu-bound 代码入手：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">CountDown</span>(<span class="params">n</span>):</span><br><span class="line">    <span class="keyword">while</span> n &gt; <span class="number">0</span>:</span><br><span class="line">        n -= <span class="number">1</span></span><br></pre></td></tr></table></figure></div>
-<p>现在，假设一个很大的数字 n &#x3D; 100000000，先来试试单线程的情况下执行 CountDown(n)。使用 8 核的 MacBook 上执行后，发现它的耗时为 5.4s。<br>这时，我们想要用多线程来加速，比如下面这几行操作：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> threading <span class="keyword">import</span> Thread</span><br><span class="line"></span><br><span class="line">n = <span class="number">100000000</span></span><br><span class="line"></span><br><span class="line">t1 = Thread(target=CountDown, args=[n // <span class="number">2</span>])</span><br><span class="line">t2 = Thread(target=CountDown, args=[n // <span class="number">2</span>])</span><br><span class="line">t1.start()</span><br><span class="line">t2.start()</span><br><span class="line">t1.join()</span><br><span class="line">t2.join()</span><br></pre></td></tr></table></figure></div>
-<p>又在同一台机器上跑了一下，结果发现，这不仅没有得到速度的提升，反而让运行变慢，总共花了 9.6s。</p>
-<p>同样决定使用四个线程再试一次，结果发现运行时间还是 9.8s，和 2 个线程的结果几乎一样。</p>
-<p>那么这是因为python的线程是假的吗？</p>
-<p>Python 的线程，的的确确封装了底层的操作系统线程，在 Linux 系统里是 Pthread（全称为 POSIX Thread），而在 Windows 系统里是 Windows Thread。另外，Python 的线程，也完全受操作系统管理，比如协调何时执行、管理内存资源、管理中断等等。所以，虽然 Python 的线程和 C++ 的线程本质上是不同的抽象，但它们的底层并没有什么不同。</p>
-<h3 id="为什么有-GIL"><a href="#为什么有-GIL" class="headerlink" title="为什么有 GIL"></a>为什么有 GIL</h3><p>GIL，是最流行的 Python 解释器 CPython 中的一个技术术语。它的意思是全局解释器锁，本质上是类似操作系统的 Mutex。每一个 Python 线程，在 CPython 解释器中执行时，都会先锁住自己的线程，阻止别的线程执行。</p>
-<p>当然，CPython 会做一些小把戏，轮流执行 Python 线程。这样一来，用户看到的就是“伪并行”——Python 线程在交错执行，来模拟真正并行的线程。</p>
-<p>那么，为什么 CPython 需要 GIL 呢？这其实和 CPython 的实现有关。CPython 使用引用计数来管理内存，所有 Python 脚本中创建的实例，都会有一个引用计数，来记录有多少个指针指向它。当引用计数只有 0 时，则会自动释放内存。</p>
-<p>什么意思呢？来看下面这个例子：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> sys</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>a = []</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>b = a</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>sys.getrefcount(a)</span><br><span class="line"><span class="number">3</span></span><br></pre></td></tr></table></figure></div>
-
-<p>这个例子中，a 的引用计数是 3，因为有 a、b 和作为参数传递的 getrefcount 这三个地方，都引用了一个空列表。</p>
-<p>这样一来，如果有两个 Python 线程同时引用了 a，就会造成引用计数的 race condition，引用计数可能最终只增加 1，这样就会造成内存被污染。因为第一个线程结束时，会把引用计数减少 1，这时可能达到条件释放内存，当第二个线程再试图访问 a 时，就找不到有效的内存了。</p>
-<p>所以说，CPython  引进 GIL 其实主要就是这么两个原因：</p>
-<ul>
-    <li>一是设计者为了规避类似于内存管理这样的复杂的竞争风险问题（race condition）</li>
-    <li>二是因为 CPython 大量使用 C 语言库，但大部分 C 语言库都不是原生线程安全的（线程安全会降低性能和增加复杂度）</li>
-</ul>
-
-<h3 id="GIL-是如何工作的？"><a href="#GIL-是如何工作的？" class="headerlink" title="GIL 是如何工作的？"></a>GIL 是如何工作的？</h3><p>下面这张图，就是一个 GIL 在 Python 程序的工作示例。其中，Thread 1、2、3 轮流执行，每一个线程在开始执行时，都会锁住 GIL，以阻止别的线程执行；同样的，每一个线程执行完一段后，会释放 GIL，以允许别的线程开始利用资源。</p>
+            <h2 id="什么时候会用到消息队列？"><a href="#什么时候会用到消息队列？" class="headerlink" title="什么时候会用到消息队列？"></a>什么时候会用到消息队列？</h2><p>首先从使用者的角度，来看看什么情况下会用到消息队列。</p>
+<p>在系统架构中，消息队列的定位就是 <strong>总线和管道</strong>，主要起到解耦上下游系统、数据缓存的作用。它不像数据库，会有很多计算、聚合、查询的逻辑，它的主要操作就是 <strong>生产和消费</strong>。所以，在业务中不管是使用哪款消息队列，核心操作永远是生产和消费数据。</p>
+<p>一般情况下，会在需要解耦上下游系统、对数据有缓冲缓存需求或者需要用到消息队列的某些功能（比如延时消息、优先级消息）的时候选择使用消息队列，然后再根据实际需求选型。</p>
+<p>下面就用经典的订单下单流程，来简要概括下对消息队列的使用情况。</p>
 <p><img  
                      lazyload
                      src="/images/loading.svg"
-                     data-src="/../images/python/python_gil.png"
-                      alt="GIL工作示例" title="GIL Working Example"
+                     data-src="/../images/mq/2cb1c8245c15f3df28228af3c8b8bd8c.jpg"
+                     
                 ></p>
-<p>那么为什么 Python 线程会去主动释放 GIL 呢？毕竟，如果仅仅是要求 Python 线程在开始执行时锁住 GIL，而永远不去释放 GIL，那别的线程就都没有了运行的机会。</p>
-<p>没错，CPython 中还有另一个机制，叫做 check_interval，意思是 CPython 解释器会去轮询检查线程 GIL 的锁住情况。每隔一段时间，Python 解释器就会强制当前线程去释放 GIL，这样别的线程才能有执行的机会。</p>
-<p>不同版本的 Python 中，check interval 的实现方式并不一样。早期的 Python 是 100 个 ticks，大致对应了 1000 个 bytecodes；而 Python 3 以后，interval 是 15 毫秒。当然，不必细究具体多久会强制释放 GIL，这不应该成为程序设计的依赖条件，我们只需明白，CPython 解释器会在一个“合理”的时间范围内释放 GIL 就可以了。</p>
-<p>整体来说，每一个 Python 线程都是类似这样循环的封装，我们来看下面这段代码：</p>
-<div class="highlight-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    <span class="keyword">if</span> (--ticker &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        ticker = check_interval;</span><br><span class="line">    </span><br><span class="line">        <span class="comment">/* Give another thread a chance */</span></span><br><span class="line">        PyThread_release_lock(interpreter_lock);</span><br><span class="line">    </span><br><span class="line">        <span class="comment">/* Other threads may run now */</span></span><br><span class="line">    </span><br><span class="line">        PyThread_acquire_lock(interpreter_lock, <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    bytecode = *next_instr++;</span><br><span class="line">    <span class="keyword">switch</span> (bytecode) &#123;</span><br><span class="line">        <span class="comment">/* execute the next instruction ... */</span> </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-<p>从这段代码中，可以看到，每个 Python 线程都会先检查 ticker 计数。只有在 ticker 大于 0 的情况下，线程才会去执行自己的 bytecode。</p>
-<h3 id="Python-的线程安全"><a href="#Python-的线程安全" class="headerlink" title="Python 的线程安全"></a>Python 的线程安全</h3><p>不过，有了 GIL，并不意味着我们 Python 编程者就不用去考虑线程安全了。即使我们知道，GIL 仅允许一个 Python 线程执行，但前面也讲到了，Python 还有 check interval 这样的抢占机制。我们来考虑这样一段代码：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"></span><br><span class="line">n = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">foo</span>():</span><br><span class="line">    <span class="keyword">global</span> n</span><br><span class="line">    n += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">threads = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">100</span>):</span><br><span class="line">    t = threading.Thread(target=foo)</span><br><span class="line">    threads.append(t)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> t <span class="keyword">in</span> threads:</span><br><span class="line">    t.start()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> t <span class="keyword">in</span> threads:</span><br><span class="line">    t.join()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(n)</span><br></pre></td></tr></table></figure></div>
-<p>如果你执行的话，就会发现，尽管大部分时候它能够打印 100，但有时侯也会打印 99 或者 98。</p>
-<p>这其实就是因为，n+&#x3D;1这一句代码让线程并不安全。如果你去翻译 foo 这个函数的 bytecode，就会发现，它实际上由下面四行 bytecode 组成：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> dis</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>dis.dis(foo)</span><br><span class="line">LOAD_GLOBAL              <span class="number">0</span> (n)</span><br><span class="line">LOAD_CONST               <span class="number">1</span> (<span class="number">1</span>)</span><br><span class="line">INPLACE_ADD</span><br><span class="line">STORE_GLOBAL             <span class="number">0</span> (n)</span><br></pre></td></tr></table></figure></div>
-<p>而这四行 bytecode 中间都是有可能被打断的</p>
-<p>所以有了 GIL，我们仍然需要去注意线程安全。正如开头所说，GIL 的设计，主要是为了方便 CPython 解释器层面的编写者，而不是 Python 应用层面的程序员。作为 Python 的使用者，我们还是需要 lock 等工具，来确保线程安全。比如下面的这个例子：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">n = <span class="number">0</span></span><br><span class="line">lock = threading.Lock()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">foo</span>():</span><br><span class="line">    <span class="keyword">global</span> n</span><br><span class="line">    <span class="keyword">with</span> lock:</span><br><span class="line">        n += <span class="number">1</span></span><br></pre></td></tr></table></figure></div>
-<h3 id="如何绕过-GIL？"><a href="#如何绕过-GIL？" class="headerlink" title="如何绕过 GIL？"></a>如何绕过 GIL？</h3><p>Python 的 GIL，是通过 CPython 的解释器加的限制。如果你的代码并不需要 CPython 解释器来执行，就不再受 GIL 的限制。</p>
-<p>事实上，很多高性能应用场景都已经有大量的 C 实现的 Python 库，例如 NumPy 的矩阵运算，就都是通过 C 来实现的，并不受 GIL 影响。</p>
-<p>所以，大部分应用情况下，你并不需要过多考虑 GIL。因为如果多线程计算成为性能瓶颈，往往已经有 Python 库来解决这个问题了。</p>
-<p>换句话说，如果你的应用真的对性能有超严格的要求，比如 100us 就对你的应用有很大影响，那可能 Python 并不是你的最优选择。</p>
-<p>当然，我们难以避免的有时候就是想临时给自己松松绑，摆脱 GIL，比如在深度学习应用里，大部分代码就都是 Python 的。在实际工作中，如果我们想实现一个自定义的微分算子，或者是一个特定硬件的加速器，那我们就不得不把这些关键性能（performance-critical）代码在 C++ 中实现（不再受 GIL 所限），然后再提供 Python 的调用接口。总的来说，绕过 GIL 的大致思路有这么两种就够了：绕过 CPython，使用 JPython（Java 实现的 Python 解释器）等别的实现；把关键性能代码，放到别的语言（一般是 C++）中实现。</p>
+<p>下单流程是一个典型的 <strong>系统解耦</strong>、 <strong>消息分发</strong> 的场景，一份数据需要被多个下游系统处理。另外一个经典场景就是日志采集流程，一般日志数据都很大，直接发到下游，下游系统可能会扛不住崩溃，所以会把数据先缓存到消息队列中。所以消息队列的基本特性就是高性能、高吞吐、低延时。</p>
+<h2 id="架构层面的基本概念"><a href="#架构层面的基本概念" class="headerlink" title="架构层面的基本概念"></a>架构层面的基本概念</h2><p>接下来将通过一张图示，来了解一下消息队列架构层面常见的一些基本概念。</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/../images/mq/845c85d7f3d55cd47c894f0b8eb7ab06.jpg"
+                     
+                ></p>
+<ol>
+<li><p><strong>Broker</strong> <strong>：</strong> Broker 本质上是一个进程，比如 RocketMQ 的 Broker 就是指RocketMQ Server 启动成功后的一个进程。在实际部署过程中，通常一个物理节点只会起一个进程，所以大部分情况下认为 Broker 就表示一个节点，但是在一些特殊场景下，一个物理节点中也可以起多个进程，就表示一台节点有多个Broker。</p>
+</li>
+<li><p><strong>Topic（主题）</strong> <strong>：</strong> 在大部分消息队列中，Topic 都是指用来组织分区关系的一个逻辑概念。通常情况下，一个 Topic 会包含多个分区。但是 RabbitMQ 是一个例外，Topic 是指具体某一种主题模式。</p>
+</li>
+<li><p><strong>Partition&#x2F;Queue&#x2F;MessageQueue（分区&#x2F;分片）：</strong> 在消息队列中，分区、分片、Partiton、Queue、MessageQueue 是一个概念，后面统一用分区来称呼，都是用来表示数据存储的最小单位。一般可以直接将消息写入到一个分区中，也可以将消息写入到Topic，再分发到具体某个分区。一个Topic 通常会包含一个或多个分区。</p>
+</li>
+<li><p><strong>Producer（生产者）</strong>： 生产者指消息的发送方，即发送消息的客户端，也叫生产端。</p>
+</li>
+<li><p><strong>Consumer（消费者）</strong>：消费者指消息的接收方，即接收消息的客户端，也叫消费端。</p>
+</li>
+<li><p><strong>ConsumerGroup&#x2F;Subscription（消费分组&#x2F;订阅）</strong>：一般情况下，消息队列中消费分组和订阅是同一个概念，后面统一用消费分组来称呼。它是用来组织消费者和分区关系的逻辑概念，也有保存消费进度的作用。</p>
+</li>
+<li><p><strong>Message（消息）</strong>：指一条真实的业务数据，消息队列的每条数据一般都叫做一条消息。</p>
+</li>
+<li><p><strong>Offset&#x2F;ConsumerOffset&#x2F;Cursor（位点&#x2F;消费位点&#x2F;游标）：</strong> 指消费者消费分区的进度，即每个消费者都会去消费分区，为了避免重复消费进度，都会保存消费者消费分区的进度信息。</p>
+</li>
+<li><p><strong>ACK&#x2F;OffsetCommit（确认&#x2F;位点提交）</strong>：确认和位点提交一般都是指提交消费进度的操作，即数据消费成功后，提交当前的消费位点，确保不重复消费。</p>
+</li>
+<li><p><strong>Leader&#x2F;Follower（领导者&#x2F;追随者，主副本&#x2F;从副本）</strong>：Leader 和 Follower一般是分区维度副本的概念，即集群中的分区一般会有多个副本。此时就会有主从副本的概念，一般是一个主副本配上一个或多个从副本。</p>
+</li>
+<li><p><strong>Segment（段&#x2F;数据分段）</strong>：段是指消息数据在底层具体存储时，分为多个文件存储时的文件，这个文件就叫做分区的数据段。即比如每超过 1G 的文件就新起一个文件来存储，这个文件就是Segment。基本所有的消息队列都有段的概念，比如Kakfa的Segment、Pulsar的Ledger等等。</p>
+</li>
+<li><p><strong>StartOffset&#x2F;EndOffset（起始位点&#x2F;结束位点）</strong>：起始位点和结束位点是分区维度的概念。即数据是顺序写入到分区的，一般从0的位置开始往后写，此时起始位点就是0。因为数据有过期的概念，分区维度较早的数据会被清理。此时起始位点就会往后移，表示当前阶段最早那条有效消息的位点。结束位点是指最新的那条数据的写入位置。因为数据一直在写入分区，所以起始位点和结束位点是一直动态变化的。</p>
+</li>
+<li><p><strong>ACL（访问控制技术）</strong>：ACL 全称是Access Control List，用来对集群中的资源进行权限控制，比如控制分区或Topic的读和写等。</p>
+</li>
+</ol>
+<h2 id="功能层面的基本概念"><a href="#功能层面的基本概念" class="headerlink" title="功能层面的基本概念"></a>功能层面的基本概念</h2><p>看完了架构层面的基本概念，来看看功能层面的基本概念。</p>
+<p>相比于数据库的基本操作是增删改查，消息队列的基本操作就是生产和消费，即读和写。消息队列一般是不支持客户端修改和删除单条数据的。接下来就从功能的角度，来了解一些常见的基本概念。</p>
+<ol>
+<li><p><strong>顺序消息：</strong> 是指从生产者和消费者的视角来看，生产者按顺序写入Topic的消息，在消费者这边能不能按生产者写入的顺序消费到消息，如果能就是顺序消息。</p>
+</li>
+<li><p><strong>延时消息&#x2F;定时消息</strong>：都是指生产者发送消息到 Broker 时，可以设置这条消息在多久后能被消费到，当时间到了后，消息就会被消费到。延时的意思就是指以 Broker 收到消息的时间为准，多久后消息能被消费者消费，比如消息发送成功后的30分钟才能被消费。定时是指可以指定消息在设置的时间才能被看到，比如设置明天的20:00才能被消费。从技术上来看，两者是一样的；从客户端的角度，功能上稍微有细微的差别；从内核的角度，一般两种消息是以同一个概念出现的。</p>
+</li>
+<li><p><strong>事务消息</strong>：消息队列的事务因为在不同的消息队列中的实现方式不一样，所以定义也不太一样。正常情况下，事务表示多个操作的原子性，即一批操作要么一起成功，要么一起失败。在消息队列中，一般指发送一批消息，要么同时成功，要么同时失败。</p>
+</li>
+<li><p><strong>消息重试</strong>：消息重试分为生产者重试和消费者重试。生产者重试是指当消息发送失败后，可以设置重试逻辑，比如重试几次、多久后重试、重试间隔多少。消费者重试是指当消费的消息处理失败后，会自动重试消费消息。</p>
+</li>
+<li><p><strong>消息回溯</strong>：是指当允许消息被多次消费，即某条消息消费成功后，这条消息不会被删除，还能再重复到这条消息。</p>
+</li>
+<li><p><strong>广播消费</strong>：广播听起来是一个主动的，即 Broker 将一条消息广播发送给多个消费者。但是在消息队列中，广播本质上是指一条消息能不能被很多个消费者消费到。只要能被多个消费者消费到，就能起到广播消费的效果，就可以叫做广播消费。</p>
+</li>
+<li><p><strong>死信队列</strong>：死信队列是一个功能，不是一个像分区一样的实体概念。它是指当某条消息无法处理成功时，则把这条消息写入到死信队列，将这条消息保存起来，从而可以处理后续的消息的功能。大部分情况下，死信队列在消费端使用得比较多，即消费到的消息无法处理成功，则将数据先保存到死信队列，然后可以继续处理其他消息。当然，在生产的时候也会有死信队列的概念，即某条消息无法写入Topic，则可以先写入到死信队列。从功能上来看，死信队列的功能业务也可以自己去实现。消息队列中死信队列的意思是，消息队列的SDK已经集成了这部分功能，从而让业务使用起来就很简单。</p>
+</li>
+<li><p><strong>优先级队列</strong>：优先级队列是指可以给在一个分区或队列中的消息设置权重，权重大的消息能够被优先消费到。大部分情况下，消息队列的消息处理是FIFO先进先出的规则。此时如果某些消息需要被优先处理，基于这个规则就无法实现。所以就有了优先级队列的概念，优先级是消息维度设置的。</p>
+</li>
+<li><p><strong>消息过滤</strong>：是指可以给每条消息打上标签，在消费的时候可以根据标签信息去消费消息。可以理解为一个简单的查询消息的功能，即通过标签去查询过滤消息。消息过滤主要在消费端生效。</p>
+</li>
+<li><p><strong>消息过期&#x2F;删除（TTL）</strong>：是指消息队列中的消息会在一定时间或者超过一定大小后会被删除。因为消息队列主要是缓冲作用，所以一般会要求消息在一定的策略后会自动被清理。</p>
+</li>
+<li><p><strong>消息轨迹</strong>：是指记录一条消息从生产端发送、服务端保存、消费端消费的全生命周期的流程信息。用来追溯消息什么时候被发送、是否发送成功、什么时候发送成功、服务端是否保存成功、什么时候保存成功、被哪些消费者消费、是否消费成功、什么时候被消费等等信息。</p>
+</li>
+<li><p><strong>消息查询</strong>：是指能够根据某些信息查询到消息队列中的信息。比如根据消息ID或根据消费位点来查询消息，可以理解为数据库里面的固定条件的select操作。</p>
+</li>
+<li><p><strong>消息压缩</strong>：是指生产端发送消息的时候，是否支持将消息进行压缩，以节省物理资源（比如网卡、硬盘）。压缩可以在SDK完成，也可以在Broker完成，并没有严格限制。通常来看，压缩在客户端完成会比较合理。</p>
+</li>
+<li><p><strong>多租户</strong>：是指同一个集群是否有逻辑隔离，比如一个物理集群能否创建两个名称都为test的主题。此时一般会有一个逻辑概念 Namespace（命名空间）和 Tenant（租户）来做隔离，一般有这两个概念的就是支持多租户。</p>
+</li>
+<li><p><strong>消息持久化</strong>：是指消息发送到Broker后，会不会持久化存储，比如存储到硬盘。有些消息队列为了保证性能，只会把消息存储在内存，此时节点重启后数据就会丢失。</p>
+</li>
+<li><p><strong>消息流控</strong>：是指能否对写入集群的消息进行限制。一般会支持Topic、分区、消费分组、集群等维度的限流。</p>
+</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>最后总结一下 4 款主流消息队列的区别以及对比，分别是RabbitMQ、RocketMQ、Kafka、Pulsar。</p>
+<ol>
+<li><p>RabbitMQ和RocektMQ属于业务消息类的消息队列，它们的特点是功能丰富、低延时、数据高可靠性、消息可追踪等等，同时也支持延时消息、优先级队列、消息过滤等功能特性。RabbitMQ发展较早，RocketMQ则是新生的消息类的消息队列，从功能、集群化、稳定性、性能来看，RocketMQ 都是比 RabbitMQ 表现要好的。所以从某种意义上说，RocketMQ是可以替代RabbitMQ的，但是因为RabbitMQ发展悠久、内核稳定以及能满足大部分的业务消息场景，所以目前用户群体也很大。国内的业务消息类的选型一般以RocketMQ优先，然后才是RabbitMQ，而国外的业务消息类选型一般优先的是RabbitMQ。</p>
+</li>
+<li><p>Kakfa 属于主打流场景的消息队列。它的特点是追求高吞吐、大流量，在功能上相对简单。不支持太多消息队列的功能，比如死信队列、延时消息、消息过滤等等。但它的核心竞争力就是非常稳定、吞吐性能非常高，能承担超大流量的业务场景。所以它是流场景下的消息管道的不二选择。</p>
+</li>
+<li><p>Pulsar 从定位上是消息和流一体的。目标就是满足所有消息和流的场景，希望同时满足功能和性能两方面的需求。所以Pulsar的内核会支持很多功能，在性能和吞吐方面也经常拿来与Kakfa做比较。但是因为其发展时间较短，目前还不是那么稳定，正处于快速发展阶段。</p>
+</li>
+</ol>
+<p>从个人选择来看，给出的建议是：</p>
+<ol>
+<li><p>业务消息类的场景，会推荐优先选择RocketMQ。主要原因是RocketMQ的性能高、社区活跃、集群化架构稳定、功能也非常丰富。而RabbitMQ当前架构存在缺点，单机存在瓶颈，在高QPS场景表现不是那么好，并且可能出现网络分区。所以从功能、性能、稳定性出发，会优先推荐使用RocketMQ。</p>
+</li>
+<li><p>流方向的场景，会推荐优先选择Kafka。主要原因是Kafka本身的性能和吞吐表现非常优越，延时和可靠性表现也不错。而Pulsar虽然主打的是替换Kafka，并且功能丰富，架构设计理念先进，但是因为发展周期较短，很多功能还不稳定，当前阶段的现网运营表现并不是那么好。所以虽然Kafka存在扩容、Rebalance方面的缺陷，但是从稳定性、性能出发，还是会优先推荐使用Kafka。</p>
+</li>
+<li><p>在日常使用中，也可能会根据业务需求同时运营多款消息队列，比如RocketMQ&#x2F;RabbitMQ+Kafka。</p>
+</li>
+</ol>
+<p>更多细节总结如下。</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/../images/mq/fcd8ca1618bb823a675668d61e765e7f.jpg"
+                     
+                ><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/../images/mq/f7d38df79c7d41630f64c54a16e16b2c.jpg"
+                     
+                ></p>
 
         </div>
 
@@ -452,18 +519,18 @@
             <div class="post-copyright-info">
                 <div class="article-copyright-info-container">
     <ul>
-        <li><strong>Title:</strong> 浅析Python GIL（全局解释器锁）</li>
+        <li><strong>Title:</strong> 主流消息队列中的基础概念与对比</li>
         <li><strong>Author:</strong> N3ur051s</li>
         <li><strong>Created at
-                :</strong> 2017-09-16 10:17:16</li>
+                :</strong> 2022-09-12 18:10:00</li>
         
             <li>
                 <strong>Updated at
-                    :</strong> 2023-09-30 16:23:10
+                    :</strong> 2023-10-09 23:21:48
             </li>
         
         <li>
-            <strong>Link:</strong> https://n3ur051s.github.io/2017/09/16/python_GIL/
+            <strong>Link:</strong> https://n3ur051s.github.io/2022/09/12/消息队列的概念与对比/
         </li>
         <li>
             <strong>
@@ -484,7 +551,7 @@
             <ul class="post-tags-box">
                 
                     <li class="tag-item">
-                        <a href="/tags/Python/">#Python</a>&nbsp;
+                        <a href="/tags/Message-Queue/">#Message Queue</a>&nbsp;
                     </li>
                 
             </ul>
@@ -498,18 +565,33 @@
                     <div class="article-prev">
                         <a class="prev"
                         rel="prev"
-                        href="/2018/10/09/python_GC/"
+                        href="/2023/06/16/%E5%88%A9%E7%94%A8openAI%E5%81%9A%E6%83%85%E6%84%9F%E5%88%86%E6%9E%90/"
                         >
                             <span class="left arrow-icon flex justify-center items-center">
                                 <i class="fa-solid fa-chevron-left"></i>
                             </span>
                             <span class="title flex justify-center items-center">
-                                <span class="post-nav-title-item">浅析Python垃圾回收机制</span>
+                                <span class="post-nav-title-item">利用openAI做情感分析</span>
                                 <span class="post-nav-item">Prev posts</span>
                             </span>
                         </a>
                     </div>
                 
+                
+                    <div class="article-next">
+                        <a class="next"
+                        rel="next"
+                        href="/2022/06/15/%E5%8D%8F%E7%A8%8B%E7%9A%84%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6%E4%B8%8E%E8%B0%83%E5%BA%A6%E5%99%A8%E5%8E%9F%E7%90%86/"
+                        >
+                            <span class="title flex justify-center items-center">
+                                <span class="post-nav-title-item">协程的运行机制与调度器原理</span>
+                                <span class="post-nav-item">Next posts</span>
+                            </span>
+                            <span class="right arrow-icon flex justify-center items-center">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </span>
+                        </a>
+                    </div>
                 
             </div>
         
@@ -567,8 +649,8 @@
             <div class="post-toc-wrap">
     <div class="post-toc">
         <div class="toc-title">On this page</div>
-        <div class="page-title">浅析Python GIL（全局解释器锁）</div>
-        <ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E5%87%BA%E4%B8%80%E4%B8%AA%E5%B0%8F%E9%97%AE%E9%A2%98"><span class="nav-text">提出一个小问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9C%89-GIL"><span class="nav-text">为什么有 GIL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GIL-%E6%98%AF%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84%EF%BC%9F"><span class="nav-text">GIL 是如何工作的？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python-%E7%9A%84%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8"><span class="nav-text">Python 的线程安全</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E7%BB%95%E8%BF%87-GIL%EF%BC%9F"><span class="nav-text">如何绕过 GIL？</span></a></li></ol>
+        <div class="page-title">主流消息队列中的基础概念与对比</div>
+        <ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E4%BC%9A%E7%94%A8%E5%88%B0%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%EF%BC%9F"><span class="nav-text">什么时候会用到消息队列？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%B1%82%E9%9D%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-text">架构层面的基本概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD%E5%B1%82%E9%9D%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-text">功能层面的基本概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a></li></ol>
 
     </div>
 </div>
