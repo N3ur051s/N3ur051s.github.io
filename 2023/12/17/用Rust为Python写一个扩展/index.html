@@ -26,7 +26,7 @@
 <meta property="og:description" content="FFI是与外部语言进行交互的接口，在Safe Rust看来，它是不可信的，也就是说Rust编译不能保证它是安全的，只能由程序员自己来保证，因此在Rust里调用这些外部的代码功能就需要把它们包在 unsafe &amp;#123;&amp;#125; 中。 Rust和C有血缘关系，具有ABI上的一致性，所以 Rust和C之间可以实现双向互调，并且不会损失性能。 Rust调用C先来看在Rust中如何调用C库的代码。">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2023-12-17T07:01:22.000Z">
-<meta property="article:modified_time" content="2024-03-20T13:26:10.195Z">
+<meta property="article:modified_time" content="2024-03-20T13:34:46.429Z">
 <meta property="article:author" content="N3ur051s">
 <meta property="article:tag" content="Rust">
 <meta name="twitter:card" content="summary">
@@ -542,8 +542,8 @@
     
         <span class="article-date article-meta-item">
             <i class="fa-regular fa-wrench"></i>&nbsp;
-            <span class="desktop">2024-03-20 21:26:10</span>
-            <span class="mobile">2024-03-20 21:26:10</span>
+            <span class="desktop">2024-03-20 21:34:46</span>
+            <span class="mobile">2024-03-20 21:34:46</span>
             <span class="hover-info">Updated</span>
         </span>
     
@@ -619,7 +619,7 @@
 <p>对应的C语言中的结构定义在 <a class="link"   target="_blank" rel="noopener" href="https://en.cppreference.com/w/c/numeric/complex" >complex.h 头文件 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a> 中，它是C99标准引入的数据类型。</p>
 <p>本身这个定义非常简单，就是定义复数的实部和虚部就可以了，不过一定要用 <code>#[repr(C)]</code> 标注。它的意思是这个类型编译的时候，要使用C语言的ABI格式。我们一般都使用C语言ABI格式，但是也有一些其他的ABI格式，可以点击 <a class="link"   target="_blank" rel="noopener" href="https://doc.rust-lang.org/nomicon/ffi.html#foreign-calling-conventions" >链接 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，查到Rust中支持的ABI格式列表。</p>
 <p>一般来讲，会使用Rust函数对这些外部unsafe函数做一下封装。像cos函数这样。</p>
-<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">cos</span>(z: Complex) <span class="punctuation">-&gt;</span> Complex &#123;</span><br><span class="line">    <span class="keyword">unsafe</span> &#123; <span class="title function_ invoke__">ccosf</span>(z) &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure></div>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">cos</span>(z: Complex) <span class="punctuation">-&gt;</span> Complex &#123;</span><br><span class="line">    <span class="keyword">unsafe</span> &#123; <span class="title function_ invoke__">ccosf</span>(z) &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
 
 <p>执行 <code>cargo run</code>，输出了下面这两行代码。</p>
 <div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">the square root of -<span class="number">1</span>+<span class="number">0</span>i is <span class="number">0</span>+<span class="number">1</span>i</span><br><span class="line"><span class="title function_ invoke__">cos</span>(-<span class="number">1</span>+<span class="number">0</span>i) = <span class="number">0.5403023</span>+<span class="number">0</span>i</span><br></pre></td></tr></table></figure></div>
@@ -642,7 +642,7 @@
 <p>下面继续看，反过来，在C中如何调用Rust代码。</p>
 <h2 id="C调用Rust"><a href="#C调用Rust" class="headerlink" title="C调用Rust"></a>C调用Rust</h2><p>在C中调用Rust代码的基本思路是，Rust代码编译成 <code>.so</code> 或 <code>.dll</code> 动态链接库，在C语言里面编译的时候，连接就可以了。</p>
 <p>在 lib.rs 文件中，写这样一个函数：</p>
-<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="keyword">fn</span> <span class="title function_">hello_from_rust</span>() &#123;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Hello from Rust!&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure></div>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[no_mangle]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="keyword">fn</span> <span class="title function_">hello_from_rust</span>() &#123;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Hello from Rust!&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
 
 <p>注意属性宏 <code>#[no_mangle]</code>，在Rust中，no_mangle 用于告诉Rust编译器不要修改函数的名称，这种修改叫做Mangling，它是编译器在解析名称时，修改我们定义的函数名称，增加一些用于其编译过程的额外信息。但在和其他语言交互时，如果函数名称被编译器修改，程序开发者就没办法知道修改后的函数名称了，其他语言也无法按原名称调用。因此，#[no_mangle] 在这种场景下就非常有用了。</p>
 <p>Cargo.toml 要加个配置，表示编译的这个库是 C ABI 格式的动态链接库。</p>
@@ -735,7 +735,7 @@
         
             <li>
                 <strong>Updated at
-                    :</strong> 2024-03-20 21:26:10
+                    :</strong> 2024-03-20 21:34:46
             </li>
         
         <li>
