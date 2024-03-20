@@ -13,25 +13,18 @@
     
     <!--- Seo Part-->
     
-    <link rel="canonical" href="https://n3ur051s.github.io/2017/09/16/python_gil/"/>
+    <link rel="canonical" href="https://n3ur051s.github.io/archives/2023/12/"/>
     <meta name="robots" content="index,follow">
     <meta name="googlebot" content="index,follow">
     <meta name="revisit-after" content="1 days">
     
-        <meta name="description" content="提出一个小问题从下方很简单的 cpu-bound 代码入手： 123def CountDown(n):    while n &gt; 0:        n -&#x3D; 1 现在，假设一个很大的数字 n &#x3D; 100000000，先来试试单线程的情况下执行 CountDown(n)。使用 8 核的 MacBook 上执行后，发现它的耗时为 5.4s。这时，我们想要用多线程来加速，比如下面这几行">
-<meta property="og:type" content="article">
-<meta property="og:title" content="浅析Python GIL（全局解释器锁）">
-<meta property="og:url" content="https://n3ur051s.github.io/2017/09/16/python_GIL/index.html">
+        <meta property="og:type" content="website">
+<meta property="og:title" content="N3ur051s&#39;s Blog">
+<meta property="og:url" content="https://n3ur051s.github.io/archives/2023/12/index.html">
 <meta property="og:site_name" content="N3ur051s&#39;s Blog">
-<meta property="og:description" content="提出一个小问题从下方很简单的 cpu-bound 代码入手： 123def CountDown(n):    while n &gt; 0:        n -&#x3D; 1 现在，假设一个很大的数字 n &#x3D; 100000000，先来试试单线程的情况下执行 CountDown(n)。使用 8 核的 MacBook 上执行后，发现它的耗时为 5.4s。这时，我们想要用多线程来加速，比如下面这几行">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://n3ur051s.github.io/images/python/python_gil.png">
-<meta property="article:published_time" content="2017-09-16T02:17:16.000Z">
-<meta property="article:modified_time" content="2023-09-30T08:23:10.646Z">
 <meta property="article:author" content="N3ur051s">
-<meta property="article:tag" content="Python">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://n3ur051s.github.io/images/python/python_gil.png">
     
     
     <!--- Icon Part-->
@@ -43,7 +36,7 @@
     
     <title>
         
-            浅析Python GIL（全局解释器锁） -
+            Archive: 2023/12 -
         
         N3ur051s&#39;s Blog
     </title>
@@ -320,7 +313,7 @@
 
                             <li class="navbar-item">
                                 <!-- Menu -->
-                                <a class=""
+                                <a class="active"
                                    href="/archives"
                                         >
                                     <i class="fa-regular fa-archive fa-fw"></i>
@@ -415,7 +408,7 @@
 
                     <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
                         
-                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full active"
                            href="/archives"
                         >
                             <span>
@@ -510,274 +503,154 @@
             <div class="main-content">
 
                 
-                    <div class="post-page-container flex relative justify-between box-border w-full h-full">
-    <div class="article-content-container">
+                    <div class="archive-container shadow-none hover:shadow-none sm:shadow-redefine sm:hover:shadow-redefine-hover">
+    
 
-        <div class="article-title relative w-full">
-            
-                <div class="w-full flex items-center pt-6 justify-start">
-                    <h1 class="article-title-regular text-second-text-color text-4xl md:text-6xl font-bold px-2 sm:px-6 md:px-8 py-3">浅析Python GIL（全局解释器锁）</h1>
-                </div>
-            
+<div class="archive-list-container">
+    
+        <section class="archive-item mb-spacing-unit last:mb-0">
+            <div class="archive-item-header flex flex-row items-center mb-2">
+                <span class="archive-year font-semibold text-3xl mr-2">2023</span>
+                <span class="archive-year-post-count text-xs md:text-sm font-bold rounded-small bg-third-background-color py-[2px] px-[10px] border border-border-color">3</span>
             </div>
-
-        
-            <div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
-                <div class="avatar w-[46px] h-[46px] flex-shrink-0 rounded-medium border border-border-color p-[1px]">
-                    <img src="/images/avatar.png">
-                </div>
-                <div class="info flex flex-col justify-between">
-                    <div class="author flex items-center">
-                        <span class="name text-default-text-color text-lg font-semibold">N3ur051s</span>
-                        
-                            <span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv2</span>
-                        
-                    </div>
-                    <div class="meta-info">
-                        <div class="article-meta-info">
-    <span class="article-date article-meta-item">
-        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
-        <span class="desktop">2017-09-16 10:17:16</span>
-        <span class="mobile">2017-09-16 10:17:16</span>
-        <span class="hover-info">Created</span>
-    </span>
-    
-        <span class="article-date article-meta-item">
-            <i class="fa-regular fa-wrench"></i>&nbsp;
-            <span class="desktop">2023-09-30 16:23:10</span>
-            <span class="mobile">2023-09-30 16:23:10</span>
-            <span class="hover-info">Updated</span>
-        </span>
-    
-
-    
-        <span class="article-categories article-meta-item">
-            <i class="fa-regular fa-folders"></i>&nbsp;
-            <ul>
-                
+            <ul class="article-list pl-0 md:pl-8 text-lg leading-[1.5]">
+              
                 
                     
-                        
-                        <li>
-                            <a href="/categories/Python/">Python</a>&nbsp;
-                        </li>
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='12-17'>
+                
                     
-                    
-                
-            </ul>
-        </span>
-    
-    
-        <span class="article-tags article-meta-item">
-            <i class="fa-regular fa-tags"></i>&nbsp;
-            <ul>
-                
-                    <li>
-                        <a href="/tags/Python/">Python</a>&nbsp;
-                    </li>
-                
-            </ul>
-        </span>
-    
-
-    
-    
-    
-    
-        <span class="article-pv article-meta-item">
-            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
-        </span>
-    
-</div>
-
-                    </div>
-                </div>
-            </div>
-        
-
-        
-
-
-        <div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
-            <h3 id="提出一个小问题"><a href="#提出一个小问题" class="headerlink" title="提出一个小问题"></a>提出一个小问题</h3><p>从下方很简单的 cpu-bound 代码入手：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">CountDown</span>(<span class="params">n</span>):</span><br><span class="line">    <span class="keyword">while</span> n &gt; <span class="number">0</span>:</span><br><span class="line">        n -= <span class="number">1</span></span><br></pre></td></tr></table></figure></div>
-<p>现在，假设一个很大的数字 n &#x3D; 100000000，先来试试单线程的情况下执行 CountDown(n)。使用 8 核的 MacBook 上执行后，发现它的耗时为 5.4s。<br>这时，我们想要用多线程来加速，比如下面这几行操作：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> threading <span class="keyword">import</span> Thread</span><br><span class="line"></span><br><span class="line">n = <span class="number">100000000</span></span><br><span class="line"></span><br><span class="line">t1 = Thread(target=CountDown, args=[n // <span class="number">2</span>])</span><br><span class="line">t2 = Thread(target=CountDown, args=[n // <span class="number">2</span>])</span><br><span class="line">t1.start()</span><br><span class="line">t2.start()</span><br><span class="line">t1.join()</span><br><span class="line">t2.join()</span><br></pre></td></tr></table></figure></div>
-<p>又在同一台机器上跑了一下，结果发现，这不仅没有得到速度的提升，反而让运行变慢，总共花了 9.6s。</p>
-<p>同样决定使用四个线程再试一次，结果发现运行时间还是 9.8s，和 2 个线程的结果几乎一样。</p>
-<p>那么这是因为python的线程是假的吗？</p>
-<p>Python 的线程，的的确确封装了底层的操作系统线程，在 Linux 系统里是 Pthread（全称为 POSIX Thread），而在 Windows 系统里是 Windows Thread。另外，Python 的线程，也完全受操作系统管理，比如协调何时执行、管理内存资源、管理中断等等。所以，虽然 Python 的线程和 C++ 的线程本质上是不同的抽象，但它们的底层并没有什么不同。</p>
-<h3 id="为什么有-GIL"><a href="#为什么有-GIL" class="headerlink" title="为什么有 GIL"></a>为什么有 GIL</h3><p>GIL，是最流行的 Python 解释器 CPython 中的一个技术术语。它的意思是全局解释器锁，本质上是类似操作系统的 Mutex。每一个 Python 线程，在 CPython 解释器中执行时，都会先锁住自己的线程，阻止别的线程执行。</p>
-<p>当然，CPython 会做一些小把戏，轮流执行 Python 线程。这样一来，用户看到的就是“伪并行”——Python 线程在交错执行，来模拟真正并行的线程。</p>
-<p>那么，为什么 CPython 需要 GIL 呢？这其实和 CPython 的实现有关。CPython 使用引用计数来管理内存，所有 Python 脚本中创建的实例，都会有一个引用计数，来记录有多少个指针指向它。当引用计数只有 0 时，则会自动释放内存。</p>
-<p>什么意思呢？来看下面这个例子：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> sys</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>a = []</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>b = a</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>sys.getrefcount(a)</span><br><span class="line"><span class="number">3</span></span><br></pre></td></tr></table></figure></div>
-
-<p>这个例子中，a 的引用计数是 3，因为有 a、b 和作为参数传递的 getrefcount 这三个地方，都引用了一个空列表。</p>
-<p>这样一来，如果有两个 Python 线程同时引用了 a，就会造成引用计数的 race condition，引用计数可能最终只增加 1，这样就会造成内存被污染。因为第一个线程结束时，会把引用计数减少 1，这时可能达到条件释放内存，当第二个线程再试图访问 a 时，就找不到有效的内存了。</p>
-<p>所以说，CPython  引进 GIL 其实主要就是这么两个原因：</p>
-<ul>
-    <li>一是设计者为了规避类似于内存管理这样的复杂的竞争风险问题（race condition）</li>
-    <li>二是因为 CPython 大量使用 C 语言库，但大部分 C 语言库都不是原生线程安全的（线程安全会降低性能和增加复杂度）</li>
-</ul>
-
-<h3 id="GIL-是如何工作的？"><a href="#GIL-是如何工作的？" class="headerlink" title="GIL 是如何工作的？"></a>GIL 是如何工作的？</h3><p>下面这张图，就是一个 GIL 在 Python 程序的工作示例。其中，Thread 1、2、3 轮流执行，每一个线程在开始执行时，都会锁住 GIL，以阻止别的线程执行；同样的，每一个线程执行完一段后，会释放 GIL，以允许别的线程开始利用资源。</p>
-<p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/../images/python/python_gil.png"
-                      alt="GIL工作示例" title="GIL Working Example"
-                ></p>
-<p>那么为什么 Python 线程会去主动释放 GIL 呢？毕竟，如果仅仅是要求 Python 线程在开始执行时锁住 GIL，而永远不去释放 GIL，那别的线程就都没有了运行的机会。</p>
-<p>没错，CPython 中还有另一个机制，叫做 check_interval，意思是 CPython 解释器会去轮询检查线程 GIL 的锁住情况。每隔一段时间，Python 解释器就会强制当前线程去释放 GIL，这样别的线程才能有执行的机会。</p>
-<p>不同版本的 Python 中，check interval 的实现方式并不一样。早期的 Python 是 100 个 ticks，大致对应了 1000 个 bytecodes；而 Python 3 以后，interval 是 15 毫秒。当然，不必细究具体多久会强制释放 GIL，这不应该成为程序设计的依赖条件，我们只需明白，CPython 解释器会在一个“合理”的时间范围内释放 GIL 就可以了。</p>
-<p>整体来说，每一个 Python 线程都是类似这样循环的封装，我们来看下面这段代码：</p>
-<div class="highlight-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    <span class="keyword">if</span> (--ticker &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        ticker = check_interval;</span><br><span class="line">    </span><br><span class="line">        <span class="comment">/* Give another thread a chance */</span></span><br><span class="line">        PyThread_release_lock(interpreter_lock);</span><br><span class="line">    </span><br><span class="line">        <span class="comment">/* Other threads may run now */</span></span><br><span class="line">    </span><br><span class="line">        PyThread_acquire_lock(interpreter_lock, <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    bytecode = *next_instr++;</span><br><span class="line">    <span class="keyword">switch</span> (bytecode) &#123;</span><br><span class="line">        <span class="comment">/* execute the next instruction ... */</span> </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-<p>从这段代码中，可以看到，每个 Python 线程都会先检查 ticker 计数。只有在 ticker 大于 0 的情况下，线程才会去执行自己的 bytecode。</p>
-<h3 id="Python-的线程安全"><a href="#Python-的线程安全" class="headerlink" title="Python 的线程安全"></a>Python 的线程安全</h3><p>不过，有了 GIL，并不意味着我们 Python 编程者就不用去考虑线程安全了。即使我们知道，GIL 仅允许一个 Python 线程执行，但前面也讲到了，Python 还有 check interval 这样的抢占机制。我们来考虑这样一段代码：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"></span><br><span class="line">n = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">foo</span>():</span><br><span class="line">    <span class="keyword">global</span> n</span><br><span class="line">    n += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">threads = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">100</span>):</span><br><span class="line">    t = threading.Thread(target=foo)</span><br><span class="line">    threads.append(t)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> t <span class="keyword">in</span> threads:</span><br><span class="line">    t.start()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> t <span class="keyword">in</span> threads:</span><br><span class="line">    t.join()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(n)</span><br></pre></td></tr></table></figure></div>
-<p>如果你执行的话，就会发现，尽管大部分时候它能够打印 100，但有时侯也会打印 99 或者 98。</p>
-<p>这其实就是因为，n+&#x3D;1这一句代码让线程并不安全。如果你去翻译 foo 这个函数的 bytecode，就会发现，它实际上由下面四行 bytecode 组成：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> dis</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>dis.dis(foo)</span><br><span class="line">LOAD_GLOBAL              <span class="number">0</span> (n)</span><br><span class="line">LOAD_CONST               <span class="number">1</span> (<span class="number">1</span>)</span><br><span class="line">INPLACE_ADD</span><br><span class="line">STORE_GLOBAL             <span class="number">0</span> (n)</span><br></pre></td></tr></table></figure></div>
-<p>而这四行 bytecode 中间都是有可能被打断的</p>
-<p>所以有了 GIL，我们仍然需要去注意线程安全。正如开头所说，GIL 的设计，主要是为了方便 CPython 解释器层面的编写者，而不是 Python 应用层面的程序员。作为 Python 的使用者，我们还是需要 lock 等工具，来确保线程安全。比如下面的这个例子：</p>
-<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">n = <span class="number">0</span></span><br><span class="line">lock = threading.Lock()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">foo</span>():</span><br><span class="line">    <span class="keyword">global</span> n</span><br><span class="line">    <span class="keyword">with</span> lock:</span><br><span class="line">        n += <span class="number">1</span></span><br></pre></td></tr></table></figure></div>
-<h3 id="如何绕过-GIL？"><a href="#如何绕过-GIL？" class="headerlink" title="如何绕过 GIL？"></a>如何绕过 GIL？</h3><p>Python 的 GIL，是通过 CPython 的解释器加的限制。如果你的代码并不需要 CPython 解释器来执行，就不再受 GIL 的限制。</p>
-<p>事实上，很多高性能应用场景都已经有大量的 C 实现的 Python 库，例如 NumPy 的矩阵运算，就都是通过 C 来实现的，并不受 GIL 影响。</p>
-<p>所以，大部分应用情况下，你并不需要过多考虑 GIL。因为如果多线程计算成为性能瓶颈，往往已经有 Python 库来解决这个问题了。</p>
-<p>换句话说，如果你的应用真的对性能有超严格的要求，比如 100us 就对你的应用有很大影响，那可能 Python 并不是你的最优选择。</p>
-<p>当然，我们难以避免的有时候就是想临时给自己松松绑，摆脱 GIL，比如在深度学习应用里，大部分代码就都是 Python 的。在实际工作中，如果我们想实现一个自定义的微分算子，或者是一个特定硬件的加速器，那我们就不得不把这些关键性能（performance-critical）代码在 C++ 中实现（不再受 GIL 所限），然后再提供 Python 的调用接口。总的来说，绕过 GIL 的大致思路有这么两种就够了：绕过 CPython，使用 JPython（Java 实现的 Python 解释器）等别的实现；把关键性能代码，放到别的语言（一般是 C++）中实现。</p>
-
-        </div>
-
-        
-            <div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
-                <div class="article-copyright-info-container">
-    <ul>
-        <li><strong>Title:</strong> 浅析Python GIL（全局解释器锁）</li>
-        <li><strong>Author:</strong> N3ur051s</li>
-        <li><strong>Created at
-                :</strong> 2017-09-16 10:17:16</li>
-        
-            <li>
-                <strong>Updated at
-                    :</strong> 2023-09-30 16:23:10
-            </li>
-        
-        <li>
-            <strong>Link:</strong> https://n3ur051s.github.io/2017/09/16/python_GIL/
-        </li>
-        <li>
-            <strong>
-                License:
-            </strong>
-            
-
-            
-                This work is licensed under <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a>.
-            
-        </li>
-    </ul>
-</div>
-
-            </div>
-        
-
-        
-            <ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
-                
-                    <li class="tag-item mx-0.5">
-                        <a href="/tags/Python/">#Python</a>&nbsp;
-                    </li>
-                
-            </ul>
-        
-
-        
-
-        
-            <div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
-                
-                    <div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
-                        <a class="prev"
-                        rel="prev"
-                        href="/2018/10/09/python_GC/"
-                        >
-                            <span class="left arrow-icon flex justify-center items-center">
-                                <i class="fa-solid fa-chevron-left"></i>
-                            </span>
-                            <span class="title flex justify-center items-center">
-                                <span class="post-nav-title-item">浅析Python垃圾回收机制</span>
-                                <span class="post-nav-item">Prev posts</span>
-                            </span>
+                        <a href="/2023/12/17/%E7%94%A8Rust%E4%B8%BAPython%E5%86%99%E4%B8%80%E4%B8%AA%E6%89%A9%E5%B1%95/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">浅析Rust异步并发编程</span>
                         </a>
-                    </div>
+                    
+              
                 
+                    
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='12-16'>
                 
+                    
+                        <a href="/2023/12/16/%E6%B5%85%E6%9E%90Rust%E5%BC%82%E6%AD%A5%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">浅析Rust异步并发编程</span>
+                        </a>
+                    
+              
+                
+                    
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='06-16'>
+                
+                    
+                        <a href="/2023/06/16/%E5%88%A9%E7%94%A8openAI%E5%81%9A%E6%83%85%E6%84%9F%E5%88%86%E6%9E%90/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">利用openAI做情感分析</span>
+                        </a>
+                    
+              
+            </ul>
+        </section>
+    
+        <section class="archive-item mb-spacing-unit last:mb-0">
+            <div class="archive-item-header flex flex-row items-center mb-2">
+                <span class="archive-year font-semibold text-3xl mr-2">2022</span>
+                <span class="archive-year-post-count text-xs md:text-sm font-bold rounded-small bg-third-background-color py-[2px] px-[10px] border border-border-color">5</span>
             </div>
-        
-
-
-        
-            <div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
-                <div class="comments-container mt-10 w-full ">
-    <div id="comment-anchor" class="w-full h-2.5"></div>
-    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
-        Comments
-    </div>
+            <ul class="article-list pl-0 md:pl-8 text-lg leading-[1.5]">
+              
+                
+                    
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='09-12'>
+                
+                    
+                        <a href="/2022/09/12/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E7%9A%84%E6%A6%82%E5%BF%B5%E4%B8%8E%E5%AF%B9%E6%AF%94/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">主流消息队列中的基础概念与对比</span>
+                        </a>
+                    
+              
+                
+                    
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='06-15'>
+                
+                    
+                        <a href="/2022/06/15/%E5%8D%8F%E7%A8%8B%E7%9A%84%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6%E4%B8%8E%E8%B0%83%E5%BA%A6%E5%99%A8%E5%8E%9F%E7%90%86/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">协程的运行机制与调度器原理</span>
+                        </a>
+                    
+              
+                
+                    
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='06-10'>
+                
+                    
+                        <a href="/2022/06/10/%E6%B7%B1%E5%85%A5%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%8E%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">深入内存管理与垃圾回收</span>
+                        </a>
+                    
+              
+                
+                    
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='04-29'>
+                
+                    
+                        <a href="/2022/04/29/%E6%B7%B1%E5%85%A5Go%E9%AB%98%E5%B9%B6%E5%8F%91%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">深入Go高并发网络模型</span>
+                        </a>
+                    
+              
+                
+                    
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='03-29'>
+                
+                    
+                        <a href="/2022/03/29/%E8%AF%A6%E8%A7%A3%E5%88%86%E5%B8%83%E5%BC%8F%E5%85%B1%E8%AF%86%E7%AE%97%E6%B3%95/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">详解分布式共识算法</span>
+                        </a>
+                    
+              
+            </ul>
+        </section>
     
-
-        
-            
-    <div id="waline"></div>
-    <script type="module" data-swup-reload-script>
-      import { init } from '/js/libs/waline.mjs';
-
-      function loadWaline() {
-        init({
-          el: '#waline',
-          serverURL: 'https://waline-woad-three.vercel.app/',
-          lang: 'zh-CN',
-          dark: 'body[class~="dark-mode"]',
-          requiredMeta: ['nick', 'mail'],
-          emoji: [],
-          recaptchaV3Key: "wasd",
-          
-        });
-      }
-
-      if (typeof swup !== 'undefined') {
-        loadWaline();
-      } else {
-        window.addEventListener('DOMContentLoaded', loadWaline);
-      }
-    </script>
-
-
-
-        
-    
-</div>
-
+        <section class="archive-item mb-spacing-unit last:mb-0">
+            <div class="archive-item-header flex flex-row items-center mb-2">
+                <span class="archive-year font-semibold text-3xl mr-2">2018</span>
+                <span class="archive-year-post-count text-xs md:text-sm font-bold rounded-small bg-third-background-color py-[2px] px-[10px] border border-border-color">1</span>
             </div>
-        
-    </div>
-
+            <ul class="article-list pl-0 md:pl-8 text-lg leading-[1.5]">
+              
+                
+                    
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='10-09'>
+                
+                    
+                        <a href="/2018/10/09/python_GC/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">浅析Python垃圾回收机制</span>
+                        </a>
+                    
+              
+            </ul>
+        </section>
     
-        <div class="toc-content-container">
-            <div class="post-toc-wrap">
-    <div class="post-toc">
-        <div class="toc-title">On this page</div>
-        <div class="page-title">浅析Python GIL（全局解释器锁）</div>
-        <ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E5%87%BA%E4%B8%80%E4%B8%AA%E5%B0%8F%E9%97%AE%E9%A2%98"><span class="nav-text">提出一个小问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9C%89-GIL"><span class="nav-text">为什么有 GIL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GIL-%E6%98%AF%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84%EF%BC%9F"><span class="nav-text">GIL 是如何工作的？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python-%E7%9A%84%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8"><span class="nav-text">Python 的线程安全</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E7%BB%95%E8%BF%87-GIL%EF%BC%9F"><span class="nav-text">如何绕过 GIL？</span></a></li></ol>
-
-    </div>
-</div>
-        </div>
+        <section class="archive-item mb-spacing-unit last:mb-0">
+            <div class="archive-item-header flex flex-row items-center mb-2">
+                <span class="archive-year font-semibold text-3xl mr-2">2017</span>
+                <span class="archive-year-post-count text-xs md:text-sm font-bold rounded-small bg-third-background-color py-[2px] px-[10px] border border-border-color">1</span>
+            </div>
+            <ul class="article-list pl-0 md:pl-8 text-lg leading-[1.5]">
+              
+                
+                    
+                    <li class="article-item space-y-2 px-6 pt-10 pb-2 text-xl relative border-l-2 border-border-color" date-is='09-16'>
+                
+                    
+                        <a href="/2017/09/16/python_GIL/" class="block overflow-hidden w-fit">
+                            <span class="article-title mb-0.5 text-2xl">浅析Python GIL（全局解释器锁）</span>
+                        </a>
+                    
+              
+            </ul>
+        </section>
     
 </div>
 
-
+</div>
 
                 
 
@@ -859,27 +732,6 @@
         </div>
     </div>
 
-    
-        <div class="post-tools">
-            <div class="post-tools-container">
-    <ul class="article-tools-list">
-        <!-- TOC aside toggle -->
-        
-            <li class="right-bottom-tools page-aside-toggle">
-                <i class="fa-regular fa-outdent"></i>
-            </li>
-        
-
-        <!-- go comment -->
-        
-            <li class="go-comment">
-                <i class="fa-regular fa-comments"></i>
-            </li>
-        
-    </ul>
-</div>
-
-        </div>
     
 
     <div class="right-side-tools-container">

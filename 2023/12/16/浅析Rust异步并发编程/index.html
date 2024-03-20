@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    <meta name="author" content="N3ur051s">
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://n3ur051s.github.io/2023/12/16/浅析rust异步并发编程/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+        <meta name="description" content="async rust从Rust v1.39版本以后，Rust引入了async关键字，用于支持异步编程的工程学体验，使我们可以用已经习惯了的同步代码书写方式来编写异步代码。 如果了解过早期的JavaScript语言，你可能会对回调模式以及“回调地狱”有所了解。 JavaScript在ECMAScript 2017版本中引入了 async&#x2F;await 关键字组合，用于改进JavaScript中异步编程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浅析Rust异步并发编程">
+<meta property="og:url" content="https://n3ur051s.github.io/2023/12/16/%E6%B5%85%E6%9E%90Rust%E5%BC%82%E6%AD%A5%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/index.html">
+<meta property="og:site_name" content="N3ur051s&#39;s Blog">
+<meta property="og:description" content="async rust从Rust v1.39版本以后，Rust引入了async关键字，用于支持异步编程的工程学体验，使我们可以用已经习惯了的同步代码书写方式来编写异步代码。 如果了解过早期的JavaScript语言，你可能会对回调模式以及“回调地狱”有所了解。 JavaScript在ECMAScript 2017版本中引入了 async&#x2F;await 关键字组合，用于改进JavaScript中异步编程">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://n3ur051s.github.io/images/rust/rust_async/cb7a4be8f0ae2f99f99967e2b8398b68.png">
+<meta property="article:published_time" content="2023-12-16T06:11:10.000Z">
+<meta property="article:modified_time" content="2024-03-20T12:23:22.144Z">
+<meta property="article:author" content="N3ur051s">
+<meta property="article:tag" content="Rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://n3ur051s.github.io/images/rust/rust_async/cb7a4be8f0ae2f99f99967e2b8398b68.png">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/favicon.ico" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.ico">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <!--- Page Info-->
+    
+    <title>
+        
+            浅析Rust异步并发编程 -
+        
+        N3ur051s&#39;s Blog
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+        <style>
+    :root {
+        --preloader-background-color: #fff;
+        --preloader-text-color: #000;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --preloader-background-color: #202124;
+            --preloader-text-color: #fff;
+        }
+    }
+
+    @media (prefers-color-scheme: light) {
+        :root {
+            --preloader-background-color: #fff;
+            --preloader-text-color: #000;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .ml13 {
+            font-size: 2.6rem !important; /* Adjust this value as needed */
+        }
+    }
+
+    .preloader {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem; /* Tailwind 'gap-4' is 1rem */
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        padding: 12px;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh; /* 'h-screen' is 100% of the viewport height */
+        background-color: var(--preloader-background-color);
+        z-index: 1100; /* 'z-[1100]' sets the z-index */
+        transition: opacity 0.2s ease-in-out;
+    }
+
+    .ml13 {
+        font-size: 3.2rem;
+        /* text-transform: uppercase; */
+        color: var(--preloader-text-color);
+        letter-spacing: -1px;
+        font-weight: 500;
+        font-family: 'Chillax-Variable', sans-serif;
+        text-align: center;
+    }
+
+    .ml13 .word {
+        display: inline-flex;
+        flex-wrap: wrap;
+        white-space: nowrap;
+    }
+
+    .ml13 .letter {
+        display: inline-block;
+        line-height: 1em;
+    }
+</style>
+
+<div class="preloader">
+    
+<script src="/js/libs/anime.min.js"></script>
+
+    <h1 class="ml13">
+        N3ur051s&#39;s Blog
+    </h1>
+    <script>
+        var textWrapper = document.querySelector('.ml13');
+        // Split text into words
+        var words = textWrapper.textContent.trim().split(' ');
+
+        // Clear the existing content
+        textWrapper.innerHTML = '';
+
+        // Wrap each word and its letters in spans
+        words.forEach(function(word) {
+            var wordSpan = document.createElement('span');
+            wordSpan.classList.add('word');
+            wordSpan.innerHTML = word.replace(/\S/g, "<span class='letter'>$&</span>");
+            textWrapper.appendChild(wordSpan);
+            textWrapper.appendChild(document.createTextNode(' ')); // Add space between words
+        });
+
+
+        anime.timeline({loop: true})
+            .add({
+                targets: '.ml13 .letter',
+                translateY: [100,0],
+                translateZ: 0,
+                opacity: [0,1],
+                easing: "easeOutExpo",
+                duration: 1400,
+                delay: (el, i) => 300 + 30 * i
+            }).add({
+            targets: '.ml13 .letter',
+            translateY: [0,-100],
+            opacity: [1,0],
+            easing: "easeInExpo",
+            duration: 1200,
+            delay: (el, i) => 100 + 30 * i
+        });
+
+        let themeStatus = JSON.parse(localStorage.getItem('REDEFINE-THEME-STATUS'))?.isDark;
+
+        // If the theme status is not found in local storage, check the preferred color scheme
+        if (themeStatus === undefined || themeStatus === null) {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                themeStatus = 'dark';
+            } else {
+                themeStatus = 'light';
+            }
+        }
+
+        // Now you can use the themeStatus variable in your code
+        if (themeStatus) {
+            document.documentElement.style.setProperty('--preloader-background-color', '#202124');
+            document.documentElement.style.setProperty('--preloader-text-color', '#fff');
+        } else {
+            document.documentElement.style.setProperty('--preloader-background-color', '#fff');
+            document.documentElement.style.setProperty('--preloader-text-color', '#000');
+        }
+
+        window.addEventListener('load', function () {
+            hidePreloaderAfterTimeout(1000); // Hide after 1000 milliseconds once the window has loaded
+        });
+
+        // Backup failsafe: Hide preloader after a maximum of 5000 milliseconds, regardless of the window load event
+        hidePreloaderAfterTimeout(5000);
+
+        function hidePreloaderAfterTimeout(delay) {
+            setTimeout(function () {
+                var preloader = document.querySelector('.preloader');
+                preloader.style.opacity = '0';
+                setTimeout(function () {
+                    preloader.style.display = 'none';
+                }, 200);
+            }, delay);
+        }
+    </script>
+</div>
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/assets/build/styles.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/fonts.css">
+
+    
+<link rel="stylesheet" href="/fonts/Satoshi/satoshi.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"n3ur051s.github.io","root":"/","language":"en","path":"search.xml"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"title_alignment":"left","headings_top_spacing":{"h1":"5rem","h2":"4rem","h3":"2.8rem","h4":"2.5rem","h5":"2.2rem","h6":"2rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":true,"lazyload":true,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":true,"open_graph":true,"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/background-dark.webp","dark":"/images/background-dark.webp"},"title":"N3ur051s's Blog","subtitle":{"text":["This is THE WAY"],"hitokoto":{"enable":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff0f5","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":{"github":null,"instagram":null,"zhihu":null,"twitter":null,"email":"arctic_ti@outlook.com","fa-brands fa-steam":"https://steamcommunity.com/id/ATcircle/"},"qrs":{"weixin":null}}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":true,"type":"fixed","audios":[{"name":"I Really Want to Stay at Your House","artist":"Cyberpunk","url":"/music/Cyberpunk - I Really Want to Stay at Your House.flac","cover":"/music/cyberpunk.png"}]},"mermaid":{"enable":false,"version":"9.3.0"}},"version":"2.6.1","navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories","icon":"fa-regular fa-folder"}},"search":{"enable":true,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur"},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"This is THE WAY","show_on_mobile":true,"links":{"Archives":{"path":"/archives","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","categories":{"enable":true,"limit":5},"tags":{"enable":true,"limit":5}},"footerStart":"2017/8/17 11:45:14"};
+    window.lang_ago = {"second":"%s seconds ago","minute":"%s minutes ago","hour":"%s hours ago","day":"%s days ago","week":"%s weeks ago","month":"%s months ago","year":"%s years ago"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+<body>
+<div class="progress-bar-container">
+    
+
+    
+        <span class="pjax-progress-bar"></span>
+<!--        <span class="swup-progress-icon">-->
+<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+<!--        </span>-->
+    
+</div>
+
+
+<main class="page-container" id="swup">
+
+    
+
+    <div class="main-content-container">
+
+
+        <div class="main-content-header">
+            <header class="navbar-container px-6 md:px-12">
+
+    <div class="navbar-content ">
+        <div class="left">
+            
+                <a class="logo-image" href="/">
+                    <img src="/images/avatar.png">
+                </a>
+            
+            <a class="logo-title" href="/">
+                
+                N3ur051s&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    HOME
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    ARCHIVES
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    TAGS
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    CATEGORIES
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                    
+                        <li class="navbar-item search search-popup-trigger">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </li>
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                    <div class="icon-item search search-popup-trigger"><i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-screen w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                HOME
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives"
+                        >
+                            <span>
+                                ARCHIVES
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags"
+                        >
+                            <span>
+                                TAGS
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories"
+                        >
+                            <span>
+                                CATEGORIES
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">5</div>
+        <div class="label text-third-text-color text-sm">Tags</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">5</div>
+        <div class="label text-third-text-color text-sm">Categories</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">10</div>
+        <div class="label text-third-text-color text-sm">Posts</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+        </div>
+
+        <div class="main-content-body">
+
+            
+
+            <div class="main-content">
+
+                
+                    <div class="post-page-container flex relative justify-between box-border w-full h-full">
+    <div class="article-content-container">
+
+        <div class="article-title relative w-full">
+            
+                <div class="w-full flex items-center pt-6 justify-start">
+                    <h1 class="article-title-regular text-second-text-color text-4xl md:text-6xl font-bold px-2 sm:px-6 md:px-8 py-3">浅析Rust异步并发编程</h1>
+                </div>
+            
+            </div>
+
+        
+            <div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+                <div class="avatar w-[46px] h-[46px] flex-shrink-0 rounded-medium border border-border-color p-[1px]">
+                    <img src="/images/avatar.png">
+                </div>
+                <div class="info flex flex-col justify-between">
+                    <div class="author flex items-center">
+                        <span class="name text-default-text-color text-lg font-semibold">N3ur051s</span>
+                        
+                            <span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv2</span>
+                        
+                    </div>
+                    <div class="meta-info">
+                        <div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2023-12-16 14:11:10</span>
+        <span class="mobile">2023-12-16 14:11:10</span>
+        <span class="hover-info">Created</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2024-03-20 20:23:22</span>
+            <span class="mobile">2024-03-20 20:23:22</span>
+            <span class="hover-info">Updated</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/Rust/">Rust</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/Rust/">Rust</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+                    </div>
+                </div>
+            </div>
+        
+
+        
+
+
+        <div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+            <h2 id="async-rust"><a href="#async-rust" class="headerlink" title="async rust"></a>async rust</h2><p>从Rust v1.39版本以后，Rust引入了async关键字，用于支持异步编程的工程学体验，使我们可以用已经习惯了的同步代码书写方式来编写异步代码。</p>
+<p>如果了解过早期的JavaScript语言，你可能会对回调模式以及“回调地狱”有所了解。</p>
+<p>JavaScript在ECMAScript 2017版本中引入了 <code>async/await</code> 关键字组合，用于改进JavaScript中异步编程体验，从此以后我们可以用顺序的逻辑书写方式来写出异步执行的代码，而不是那种用回调方式把一段连续的逻辑切割成一小块一小块的。</p>
+<p>Rust也差不多，它用类似的方式引入了 <code>async/.await</code> 关键字对。如果对Mozilla公司有所了解的话，就不会感觉奇怪了，Mozilla是互联网标准组织的重要成员，JavaScript之父就在Mozilla公司，参与了JavaScript标准制定的全过程。同时，Mozilla还推出了Rust语言以及WebAssembly字节码规范。</p>
+<h3 id="async-函数和块（代码片段）"><a href="#async-函数和块（代码片段）" class="headerlink" title="async 函数和块（代码片段）"></a>async 函数和块（代码片段）</h3><p>在Rust中，用上async的函数长这样:</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">foo</span>() &#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>也就是在原来的fn前加上 async 修饰。另外，还有所谓的 async 块，也就是直接在 async 后面加花括号。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">foo</span>() &#123;</span><br><span class="line">    <span class="keyword">async</span> &#123;</span><br><span class="line">      <span class="comment">// 这就是async块</span></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">foo</span>() &#123;</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">move</span> &#123;</span><br><span class="line">      <span class="comment">// 加move，类似闭包，明确标识把用到的环境变量移动进来</span></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>上面的函数是可以编译通过的，但是这样写本身会有一些问题。</p>
+<p>提示：</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">futures <span class="keyword">do</span> nothing unless you `.<span class="keyword">await</span>` or poll them</span><br></pre></td></tr></table></figure></div>
+
+<p>翻译出来就是：futures不做任何事情，除非你用 <code>.await</code> 或轮询它们。</p>
+<p>Rust中，async函数或块会被视作一个Future对象，类似于JS里的Promise，async 关键字只是用来定义这个Future对象，定义好的这片异步代码并不会自动执行，而是需要和async配对的 <code>.await</code> 去驱动它才会执行。</p>
+<p>比如像下面这样：</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">foo</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = <span class="keyword">async</span> &#123;&#125;;</span><br><span class="line">    a.<span class="keyword">await</span>;            <span class="comment">// 用.await驱动异步块</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 或者更紧凑的写法</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">foo</span>() &#123;</span><br><span class="line">    <span class="keyword">async</span> &#123;&#125;.<span class="keyword">await</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>但是，上述代码是没办法通过编译的，会报这个错。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error[E0728]: `<span class="keyword">await</span>` is only allowed inside `<span class="keyword">async</span>` functions and blocks</span><br></pre></td></tr></table></figure></div>
+
+<p>它提示说， <code>await</code> 关键字只能在async块或函数里使用。</p>
+<p>于是得改成这样才行：</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">foo</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = <span class="keyword">async</span> &#123;&#125;;</span><br><span class="line">    a.<span class="keyword">await</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>这里看到两条规则。</p>
+<ol>
+<li>用async定义异步代码，用 <code>.await</code> 驱动执行。</li>
+<li>但是 <code>.await</code> 又只能在async块中调用。</li>
+</ol>
+<p>那么第一个最外层的 async 代码块或函数如何被调用呢？</p>
+<p>我们知道，Rust的程序都是从main函数开始执行的。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>即使是异步代码，也不能破坏这个规则。</p>
+<p>试着这样写:</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;      <span class="comment">// 在main函数前加一个async修饰</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = <span class="keyword">async</span> &#123;&#125;;</span><br><span class="line">    a.<span class="keyword">await</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>会报错:</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error[E0752]: `main` function is not allowed to be `<span class="keyword">async</span>`</span><br></pre></td></tr></table></figure></div>
+
+<p>Rust 明确规定了，main函数前不能加async修饰。也就是说，只能写成这种形式。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = <span class="keyword">async</span> &#123;&#125;;</span><br><span class="line">    a.<span class="keyword">await</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>但是前面又说过了， <code>.await</code> 只能写在async代码块或函数里。我们进入了一个两难的境地。如果就在目前这个体系里面寻找解决方案的话，那只能原地打转。</p>
+<p><strong>这里必然要引入一种外部驱动机制</strong>。比如，有一个辅助函数，它可以接收Future，并驱动它，而不需要使用 <code>.await</code>。像下面这样就行了。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = <span class="keyword">async</span> &#123;&#125;;</span><br><span class="line">    <span class="title function_ invoke__">block_on</span>(a);  <span class="comment">// 辅助驱动函数 block_on</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>这个 <code>block_on()</code>，它必须是一个运行时（Runtime）的入口。在它下面，蕴藏着一整套运行时机制。</strong></p>
+<p>目前Rust标准库中还没有内置一个官方的异步Runtime，不过Rust生态中有很多第三方的Runtime实现库，比如tokio、async-std等。而其中tokio应用最为广泛。 <strong>通过几年的时间，tokio在第三方异步Runtime的激烈竞争中胜出，可以说它现在已经成为了Rust生态中异步运行时事实上的标准。</strong></p>
+<h3 id="异步运行时"><a href="#异步运行时" class="headerlink" title="异步运行时"></a>异步运行时</h3><p>异步运行时是一个库，这个库包含一个响应器（reactor）和一个或多个执行器（executor）。它需要处理哪些事情呢？</p>
+<ol>
+<li>执行异步代码。</li>
+<li>遇到 <code>.await</code> 的时候，判断能不能获取到结果。如果不能，CPU不会一直阻塞等，而是缓存当前任务的状态，然后将当前任务挂起，放到内部一个任务池中，同时向OS注册要监听等待的外部事件。</li>
+<li>询问或执行其他任务。如果所有任务都暂时没有进展，就会进入一个空闲（idle）状态，不会使CPU忙等待。</li>
+<li>只要某个任务对应所监听到的信号来了，也就是说有结果返回了，就会把对应的任务重新捡起来，并从缓存中恢复暂停前的状态，继续往下执行。从代码上看，就是从上一个 <code>.await</code> 后面的代码继续往下执行。</li>
+<li>遇到下一个 <code>.await</code>，就重复第1步～第4步。</li>
+<li>直到这个异步代码（函数）执行完毕，完成操作或返回结果。</li>
+</ol>
+<p>总结起来，就是这6项任务。</p>
+<ol>
+<li>异步代码的执行；</li>
+<li>任务的暂停；</li>
+<li>状态的缓存；</li>
+<li>外部事件的监听注册；</li>
+<li>外部信号来了后，唤醒对应的任务，恢复任务状态；</li>
+<li>多个任务间的调度。</li>
+</ol>
+<p>总之，Rust异步运行时要干的事情还不少。设计一个高效的异步运行时是一件相当有技术挑战的工作。</p>
+<h2 id="tokio异步编程"><a href="#tokio异步编程" class="headerlink" title="tokio异步编程"></a>tokio异步编程</h2><h3 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h3><p>首先，得在Cargo.toml中引入tokio依赖。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tokio = &#123; version = <span class="string">&quot;1&quot;</span>, features = [<span class="string">&quot;full&quot;</span>] &#125;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="main函数"><a href="#main函数" class="headerlink" title="main函数"></a>main函数</h3><p>然后，我们把tokio提供的一个属性宏标注在main函数上面，这样main函数前就可以加async修饰了。</p>
+<p>像下面这样：</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[tokio::main]</span>      <span class="comment">// 这个是tokio库里面提供的一个属性宏标注</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;   <span class="comment">// 注意 main 函数前面有 async</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Hello world&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>这个 <code>#[tokio::main]</code> 做的事情其实就是把用 async 修饰的 main 函数展开，展开会类似下面这个样子：</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    tokio::runtime::Builder::<span class="title function_ invoke__">new_multi_thread</span>()</span><br><span class="line">        .<span class="title function_ invoke__">enable_all</span>()</span><br><span class="line">        .<span class="title function_ invoke__">build</span>()</span><br><span class="line">        .<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">        .<span class="title function_ invoke__">block_on</span>(<span class="keyword">async</span> &#123;              <span class="comment">// 注意这里block_on，里面是异步代码</span></span><br><span class="line">            <span class="built_in">println!</span>(<span class="string">&quot;Hello world&quot;</span>);</span><br><span class="line">        &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>也就是在main函数里构建一个Runtime实例，第二行代码的意思是 tokio 库下 Runtime 模块的 Builder 类型里的 <code>new_multi_thread()</code> 函数，整个路径用 <code>::</code> 号连接， <code>::</code> 也叫路径符。这个函数创建的是多线程版本的 Runtime 实例。</p>
+<p><code>.enable_all()</code> 用于打开默认所有配置， <code>.build()</code> 用于真正创建实例，它返回一个用Result包起来的结果， <code>.unwrap()</code> 把这个 Result 解开，把Runtime实例拿出来，然后在这个实例上调用 <code>.block_on()</code> 函数。整个过程用的是 <strong>链式调用风格</strong>，这个风格在其他语言中也很普遍，只要遵循前一个函数调用返回自身或者新的对象即可。</p>
+<p><code>block_on()</code> 会执行异步代码，这样就把异步代码给加载到这个Runtime实例上并驱动起来了。</p>
+<p>tokio还可以基于当前系统线程创建单线程的Runtime，你可以看一下示例。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[tokio::main(flavor = <span class="string">&quot;current_thread&quot;</span>)]</span>  <span class="comment">// 属性标注里面配置参数</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Hello world&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>展开后，是这个样子的：</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    tokio::runtime::Builder::<span class="title function_ invoke__">new_current_thread</span>()  <span class="comment">// 注意这一句</span></span><br><span class="line">        .<span class="title function_ invoke__">enable_all</span>()</span><br><span class="line">        .<span class="title function_ invoke__">build</span>()</span><br><span class="line">        .<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">        .<span class="title function_ invoke__">block_on</span>(<span class="keyword">async</span> &#123;</span><br><span class="line">            <span class="built_in">println!</span>(<span class="string">&quot;Hello world&quot;</span>);</span><br><span class="line">        &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>单线程的Runtime由 <code>Builder::new_current_thread()</code> 函数创建，代码的其他部分和多线程Runtime都一样。</p>
+<h3 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h3><h4 id="文件写"><a href="#文件写" class="headerlink" title="文件写"></a>文件写</h4><p>下面的例子展示了如何基于tokio做文件的写操作。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> tokio::fs::File;</span><br><span class="line"><span class="keyword">use</span> tokio::io::AsyncWriteExt;     <span class="comment">// 引入AsyncWriteExt trait</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">doit</span>() <span class="punctuation">-&gt;</span> std::io::<span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">file</span> = File::<span class="title function_ invoke__">create</span>(<span class="string">&quot;foo.txt&quot;</span>).<span class="keyword">await</span>.<span class="title function_ invoke__">unwrap</span>();  <span class="comment">// 创建文件</span></span><br><span class="line">    file.<span class="title function_ invoke__">write_all</span>(<span class="string">b&quot;hello, world!&quot;</span>).<span class="keyword">await</span>.<span class="title function_ invoke__">unwrap</span>();        <span class="comment">// 写入内容</span></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[tokio::main]</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">result</span> = <span class="title function_ invoke__">doit</span>().<span class="keyword">await</span>;   <span class="comment">// 注意这里的.await</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="文件读"><a href="#文件读" class="headerlink" title="文件读"></a>文件读</h4><p>下面的例子展示了如何基于tokio做文件的读操作。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> tokio::fs::File;</span><br><span class="line"><span class="keyword">use</span> tokio::io::AsyncReadExt;   <span class="comment">// 引入AsyncReadExt trait</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">doit</span>() <span class="punctuation">-&gt;</span> std::io::<span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">file</span> = File::<span class="title function_ invoke__">open</span>(<span class="string">&quot;foo.txt&quot;</span>).<span class="keyword">await</span>.<span class="title function_ invoke__">unwrap</span>();  <span class="comment">// 打开文件</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">contents</span> = <span class="built_in">vec!</span>[];</span><br><span class="line">    <span class="comment">// 将文件内容读到contents动态数组里面</span></span><br><span class="line">    file.<span class="title function_ invoke__">read_to_end</span>(&amp;<span class="keyword">mut</span> contents).<span class="keyword">await</span>.<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;len = &#123;&#125;&quot;</span>, contents.<span class="title function_ invoke__">len</span>());</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[tokio::main]</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">result</span> = <span class="title function_ invoke__">doit</span>().<span class="keyword">await</span>;</span><br><span class="line">    <span class="comment">// process</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>可以看到，Rust的异步代码和JavaScript的异步代码非常类似，只不过JavaScript的 await 关键字是放在语句前面的。</p>
+<h4 id="定时器操作"><a href="#定时器操作" class="headerlink" title="定时器操作"></a>定时器操作</h4><p>下面的例子展示了如何基于tokio做定时器操作。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> tokio::time;</span><br><span class="line"><span class="keyword">use</span> std::time::Duration;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[tokio::main]</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="comment">// 创建Interval实例</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">interval</span> = time::<span class="title function_ invoke__">interval</span>(Duration::<span class="title function_ invoke__">from_millis</span>(<span class="number">10</span>));</span><br><span class="line">    <span class="comment">// 滴答，立即执行</span></span><br><span class="line">    interval.<span class="title function_ invoke__">tick</span>().<span class="keyword">await</span>;</span><br><span class="line">    <span class="comment">// 滴答，这个滴答完成后，10ms过去了</span></span><br><span class="line">    interval.<span class="title function_ invoke__">tick</span>().<span class="keyword">await</span>;</span><br><span class="line">    <span class="comment">// 滴答，这个滴答完成后，20ms过去了</span></span><br><span class="line">    interval.<span class="title function_ invoke__">tick</span>().<span class="keyword">await</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>上面示例里的时间段， <code>Duration::from_millis(10)</code> 表示创建一个10ms的时间段，我们在其他语言中更多是习惯直接传入一个数字，比如传 10000 进去，默认单位是 us。但是前面我们说过，Rust中会尽可能地类型化，因此这里定义了一个Duration类型，它可以接收来自s、ms、us等单位的数值来构造时间段。在这点上，Java和Rust是比较像的。</p>
+<h3 id="tokio组件"><a href="#tokio组件" class="headerlink" title="tokio组件"></a>tokio组件</h3><p>tokio发展到现在，已经是一个功能丰富、机制完善的Runtime框架了。它针对异步场景把Rust标准库里对应的类型和设施都重新实现了一遍。具体包含6个部分。</p>
+<ul>
+<li>Runtime设施组件：你可以自由地配置创建基于系统单线程的Runtime和多线程的Runtime。</li>
+<li>轻量级任务 task：你可以把它理解成类似Go语言中的Goroutine这种轻量级线程，而不是操作系统层面的线程。</li>
+<li>异步输入输出（I&#x2F;O）：网络模块net、文件操作模块fs、signal模块、process模块等。</li>
+<li>时间模块：定时器Interval等。</li>
+<li>异步场景下的同步原语：channel、Mutex锁等等。</li>
+<li>在异步环境下执行计算密集型任务的方案 <code>spawn_blocking</code> 等等。</li>
+</ul>
+<p>通过对这些基础设施的重新实现，tokio为Rust异步编程的生态打下了坚实的基础，通过几年的发展，一些上层建筑蓬勃发展起来了。比如：</p>
+<ul>
+<li>Hyper：HTTP 协议Server和Client的实现</li>
+<li>Axum：Web开发框架</li>
+<li>async-graphql：GraphQL开发框架</li>
+<li>tonic：gRPC框架的Rust实现</li>
+<li>……</li>
+</ul>
+<h3 id="tokio底层机制"><a href="#tokio底层机制" class="headerlink" title="tokio底层机制"></a>tokio底层机制</h3><p>下面我们来看一下tokio的底层魔法到底是什么？</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/../images/rust/rust_async/cb7a4be8f0ae2f99f99967e2b8398b68.png"
+                     
+                ></p>
+<p>最底层是硬件、CPU等。在其上是操作系统，Linux、Windows、macOS 等。不同的操作系统会提供不同的异步抽象机制，比如 Linux 下有 epoll，macOS下有kqueue。</p>
+<p>Tokio的异步Runtime能力实际正是建立在操作系统的这些异步机制上的。Tokio的reactor用来接收从操作系统的异步框架中传回的消息事件，然后通知 tokio waker 把对应的任务唤醒，放回 tokio executor 中执行。每一个任务会被抽象成一个Future来独立处理，而每一个Future在Rust中会被处理成一个结构体，用状态机的方式来管理。Tokio中还实现了对这些任务的安排调度机制。</p>
+<p>注：官方的 <a class="link"   target="_blank" rel="noopener" href="https://rust-lang.github.io/async-book/" >async book <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a> 有对这个专题更深入的讲解。</p>
+<h3 id="task：轻量级线程"><a href="#task：轻量级线程" class="headerlink" title="task：轻量级线程"></a>task：轻量级线程</h3><p>tokio提供了一种合作式（而非抢占式）的任务模型：每个任务task都可以看作是一个轻量级的线程，与操作系统线程相对。操作系统默认的线程机制需要消耗比较多的资源，一台普通服务器上能启动的总线程数一般最多也就几千个。而tokio的轻量级线程可以在一台普通服务器上创建上百万个。</p>
+<h4 id="M：N模型"><a href="#M：N模型" class="headerlink" title="M：N模型"></a>M：N模型</h4><p>tokio的这个模型是一种M：N模型，M表示轻量级线程的数量，N表示操作系统线程的数量。也就是说，它实际是将所有的轻量级线程映射到具体的N个操作系统线程上来执行，相当于在操作系统线程之上抽象了一层，这层抽象是否高效正是衡量一个Runtime好坏的核心标准。其中，操作系统线程数量N是可以由开发者自行配置的，最常用的默认配置是一个机器上有多少CPU逻辑处理器核，N就等于多少。</p>
+<h4 id="合作式"><a href="#合作式" class="headerlink" title="合作式"></a>合作式</h4><p>同时，tokio的轻量级线程之间的关系是一种合作式的。合作式的意思就是同一个CPU核上的任务大家是配合着执行（不同CPU核上的任务是并行执行的）。我们可以设想一个简单的场景，A和B两个任务被分配到了同一个CPU核上，A先执行，那么，只有在A异步代码中碰到 <code>.await</code> 而且不能立即得到返回值的时候，才会触发挂起，进而切换到任务B执行。</p>
+<p>当任务B碰到 <code>.await</code> 时，又会回去检查一下任务A所await的那个值回来没有，如果回来了就唤醒任务A，从之前那个 <code>.await</code> 后面的语句继续执行；如果没回来就继续等待，或者看看能不能从其他核上拿点任务过来执行，因为此时任务A和任务B都在等待await的值回来。任何一个task里await的值回来后（会由操作系统向tokio通知一个事件），tokio就会唤醒对应的task继续往下执行。</p>
+<p>也就是说，在一个task没有遇到 <code>.await</code> 之前，它是不会主动交出这个CPU核的，其他task也不能主动来抢占这个CPU核。所以tokio实现的这个模型叫做合作式的。和它相对的，Go语言自带的Runtime实现的Goroutine是一种抢占式的轻量级线程。</p>
+<h4 id="非阻塞"><a href="#非阻塞" class="headerlink" title="非阻塞"></a>非阻塞</h4><p>从前面代码的示范及讲解可以看到，在程序员这个视角看来，代码层面的效果是一个task（一段异步代码）遇到 <code>.await</code> 时，看起来就好像是被阻塞住了，会等待请求结果的返回。而从tokio底层的运行和调度机制来看，它又是非阻塞的。非阻塞的意思是，一个轻量级线程task的“卡住”，不会把用来承载它的操作系统线程给真正地卡住，OS线程被调度了新的任务执行。这样，CPU资源就没有被浪费。</p>
+<p>这个task之间的调度工作是在tokio内部自动完成的，对程序员来说是不可见的。这样就带来了巨大的好处，程序员写异步并发代码，就跟之前写同步代码基本一样，顺着将逻辑写下去就行了。而不会因为去适应异步回调而把代码逻辑打碎分散到文件的各个地方。所以，tokio的task在真正执行的时候是非阻塞的，不会对系统资源造成浪费。</p>
+<p>下面来看一下如何创建tokio task，这需要使用 <code>task::spawn()</code> 函数。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> tokio::task;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[tokio::main]</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    task::<span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> &#123;</span><br><span class="line">        <span class="comment">// 在这里执行异步任务</span></span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>在这个示例里，main函数里面创建了一个新的task，用来执行具体的任务。我们需要知道，tokio管理下的 <code>async fn main() &#123;&#125;</code> 本身就是一个task，相当于在main task中，创建了一个新的task来执行。这里，main task就是父task，新创建的这个task是子task。</p>
+<p>这两个task之间它们是没有关系的。在tokio中，子task的生存期有可能超过父task的生存期，也就是父task执行结束了，但子task还在执行。如果在父task里要等待子task执行完，再结束自己，保险的做法是用 JoinHandler。</p>
+<p>注：在main函数中有更多细节，如果main函数所在的task先结束了，会导致整个程序进程退出，有可能会强制杀掉那些新创建的子task。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> tokio::task;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[tokio::main]</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="comment">// 在这里执行异步任务</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">task_a</span> = task::<span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> &#123;</span><br><span class="line">        <span class="string">&quot;hello world!&quot;</span></span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="comment">// 等待子任务结束，返回结果</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">result</span> = task_a.<span class="keyword">await</span>.<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="built_in">assert_eq!</span>(result, <span class="string">&quot;hello world!&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>JoinHandler这个新概念跟task的管理相关。我们在main task中里创建一个新task后， <code>task::spawn()</code> 函数实际有一个返回值，它返回一个handler，这个handler可以让我们在main task里管理新创建的task。这个handler也可以用来指代这个新的task，相当于给这个task取了一个名字。比如示例里，我们就把这个新的任务命名为task_a，它的类型是 JoinHandler。在用 <code>spawn()</code> 创建task_a后，这个新任务就 <strong>立即执行</strong>。</p>
+<p><code>task_a.await</code> 会返回一个Result，所以上面代码中，需要加一个 <code>unwrap()</code> 把task_a真正的返回内容解包出来。至于对task的 <code>.await</code> 为什么会返回一个Result，而不是直接返回异步任务的返回值本身，是因为task里有可能会发生panic。可以看一下例子。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> tokio::task;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[tokio::main]</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">task_a</span> = task::<span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> &#123;</span><br><span class="line">        <span class="built_in">panic!</span>(<span class="string">&quot;something bad happened!&quot;</span>)</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="comment">// 当task_a里面panic时，对task handler进行.await，会得到Err</span></span><br><span class="line">    <span class="built_in">assert!</span>(task_a.<span class="keyword">await</span>.<span class="title function_ invoke__">is_err</span>());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>由于task可能会panic，所以就得对task的返回值用Result包一层，这样方便在上一层的task里处理这种错误。 <strong>在Rust中，只要过程中有可能返回错误，那就果断用Result包一层作为返回值，这是典型做法。</strong></p>
+<p>有了 JoinHandler，我们可以方便地创建一批新任务，并等待它们的返回值。你可以看一下示例。</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> tokio::task;</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">my_background_op</span>(id: <span class="type">i32</span>) <span class="punctuation">-&gt;</span> <span class="type">String</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">s</span> = <span class="built_in">format!</span>(<span class="string">&quot;Starting background task &#123;&#125;.&quot;</span>, id);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, s);</span><br><span class="line">    s</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[tokio::main]</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ops</span> = <span class="built_in">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">tasks</span> = <span class="type">Vec</span>::<span class="title function_ invoke__">with_capacity</span>(ops.<span class="title function_ invoke__">len</span>());</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">op</span> <span class="keyword">in</span> ops &#123;</span><br><span class="line">        <span class="comment">// 任务创建后，立即开始运行，我们用一个Vec来持有各个任务的handler</span></span><br><span class="line">        tasks.<span class="title function_ invoke__">push</span>(tokio::<span class="title function_ invoke__">spawn</span>(<span class="title function_ invoke__">my_background_op</span>(op)));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">outputs</span> = <span class="type">Vec</span>::<span class="title function_ invoke__">with_capacity</span>(tasks.<span class="title function_ invoke__">len</span>());</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">task</span> <span class="keyword">in</span> tasks &#123;</span><br><span class="line">        outputs.<span class="title function_ invoke__">push</span>(task.<span class="keyword">await</span>.<span class="title function_ invoke__">unwrap</span>());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;&quot;</span>, outputs);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出</span></span><br><span class="line">Starting background task <span class="number">1</span>.</span><br><span class="line">Starting background task <span class="number">2</span>.</span><br><span class="line">Starting background task <span class="number">3</span>.</span><br></pre></td></tr></table></figure></div>
+
+<p>上面示例里，我们用 tasks 这个动态数组持有3个异步任务的handler， <strong>它们是并发执行的</strong>。然后对 tasks 进行迭代，等待每个task执行完成，并且搜集任务的结果放到 outputs 动态数组里。最后打印出来。</p>
+<p>可以看到，在tokio中创建一批任务并发执行非常简单，循环调用 <code>task::spawn()</code> 就行了，并且还能对创建的任务进行管理。</p>
+<h3 id="哪些操作要加-await？"><a href="#哪些操作要加-await？" class="headerlink" title="哪些操作要加 .await？"></a>哪些操作要加 <code>.await</code>？</h3><p>一个总体的原则是， <strong>涉及到I&#x2F;O操作的，都可以加</strong>，因为tokio已经帮我们实现了一份异步的对应于Rust标准库的I&#x2F;O实现。最常见的I&#x2F;O操作就是网络I&#x2F;O、磁盘I&#x2F;O等等。具体来说，有几大模块。</p>
+<ul>
+<li>net模块：网络操作；</li>
+<li>fs模块：文件操作；</li>
+<li>定时器操作：Interval、sleep等函数；</li>
+<li>channel：四种管道 oneshot、mpsc、watch、broadcast；</li>
+<li>signal模块：系统信号处理；</li>
+<li>process模块：调用系统命令等。</li>
+</ul>
+<p>具体可以查看 <a class="link"   target="_blank" rel="noopener" href="https://docs.rs/tokio/latest/tokio/index.html" >tokio API <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>。在查看API文档的时候，只要那个接口前面有 async 关键字修饰，那么使用的时候就需要加 <code>.await</code>。比如， <code>tokio::fs::read()</code> 的定义就是这样的：</p>
+<div class="highlight-container" data-rel="Rust"><figure class="iseeu highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">read</span>(path: <span class="keyword">impl</span> <span class="title class_">AsRef</span>&lt;Path&gt;) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">Vec</span>&lt;<span class="type">u8</span>&gt;&gt;</span><br></pre></td></tr></table></figure></div>
+
+<p>而像其他的一些数据结构的基本操作，比如 <code>Vec&lt;T&gt;</code>、 <code>HashMap&lt;K, V&gt;</code> 的操作等，由于它们都是在内存里执行，它们的接口前面也没有 async 关键字修饰，所以不需要也不能加 <code>.await</code>。</p>
+
+        </div>
+
+        
+            <div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+                <div class="article-copyright-info-container">
+    <ul>
+        <li><strong>Title:</strong> 浅析Rust异步并发编程</li>
+        <li><strong>Author:</strong> N3ur051s</li>
+        <li><strong>Created at
+                :</strong> 2023-12-16 14:11:10</li>
+        
+            <li>
+                <strong>Updated at
+                    :</strong> 2024-03-20 20:23:22
+            </li>
+        
+        <li>
+            <strong>Link:</strong> https://n3ur051s.github.io/2023/12/16/浅析Rust异步并发编程/
+        </li>
+        <li>
+            <strong>
+                License:
+            </strong>
+            
+
+            
+                This work is licensed under <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a>.
+            
+        </li>
+    </ul>
+</div>
+
+            </div>
+        
+
+        
+            <ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+                
+                    <li class="tag-item mx-0.5">
+                        <a href="/tags/Rust/">#Rust</a>&nbsp;
+                    </li>
+                
+            </ul>
+        
+
+        
+
+        
+            <div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+                
+                    <div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+                        <a class="prev"
+                        rel="prev"
+                        href="/2023/12/17/%E7%94%A8Rust%E4%B8%BAPython%E5%86%99%E4%B8%80%E4%B8%AA%E6%89%A9%E5%B1%95/"
+                        >
+                            <span class="left arrow-icon flex justify-center items-center">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </span>
+                            <span class="title flex justify-center items-center">
+                                <span class="post-nav-title-item">浅析Rust异步并发编程</span>
+                                <span class="post-nav-item">Prev posts</span>
+                            </span>
+                        </a>
+                    </div>
+                
+                
+                    <div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+                        <a class="next"
+                        rel="next"
+                        href="/2023/06/16/%E5%88%A9%E7%94%A8openAI%E5%81%9A%E6%83%85%E6%84%9F%E5%88%86%E6%9E%90/"
+                        >
+                            <span class="title flex justify-center items-center">
+                                <span class="post-nav-title-item">利用openAI做情感分析</span>
+                                <span class="post-nav-item">Next posts</span>
+                            </span>
+                            <span class="right arrow-icon flex justify-center items-center">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </span>
+                        </a>
+                    </div>
+                
+            </div>
+        
+
+
+        
+            <div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+                <div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        Comments
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.mjs';
+
+      function loadWaline() {
+        init({
+          el: '#waline',
+          serverURL: 'https://waline-woad-three.vercel.app/',
+          lang: 'zh-CN',
+          dark: 'body[class~="dark-mode"]',
+          requiredMeta: ['nick', 'mail'],
+          emoji: [],
+          recaptchaV3Key: "wasd",
+          
+        });
+      }
+
+      if (typeof swup !== 'undefined') {
+        loadWaline();
+      } else {
+        window.addEventListener('DOMContentLoaded', loadWaline);
+      }
+    </script>
+
+
+
+        
+    
+</div>
+
+            </div>
+        
+    </div>
+
+    
+        <div class="toc-content-container">
+            <div class="post-toc-wrap">
+    <div class="post-toc">
+        <div class="toc-title">On this page</div>
+        <div class="page-title">浅析Rust异步并发编程</div>
+        <ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#async-rust"><span class="nav-text">async rust</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#async-%E5%87%BD%E6%95%B0%E5%92%8C%E5%9D%97%EF%BC%88%E4%BB%A3%E7%A0%81%E7%89%87%E6%AE%B5%EF%BC%89"><span class="nav-text">async 函数和块（代码片段）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E8%BF%90%E8%A1%8C%E6%97%B6"><span class="nav-text">异步运行时</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tokio%E5%BC%82%E6%AD%A5%E7%BC%96%E7%A8%8B"><span class="nav-text">tokio异步编程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%95%E5%85%A5%E4%BE%9D%E8%B5%96"><span class="nav-text">引入依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#main%E5%87%BD%E6%95%B0"><span class="nav-text">main函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B"><span class="nav-text">代码示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tokio%E7%BB%84%E4%BB%B6"><span class="nav-text">tokio组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tokio%E5%BA%95%E5%B1%82%E6%9C%BA%E5%88%B6"><span class="nav-text">tokio底层机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#task%EF%BC%9A%E8%BD%BB%E9%87%8F%E7%BA%A7%E7%BA%BF%E7%A8%8B"><span class="nav-text">task：轻量级线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%93%AA%E4%BA%9B%E6%93%8D%E4%BD%9C%E8%A6%81%E5%8A%A0-await%EF%BC%9F"><span class="nav-text">哪些操作要加 .await？</span></a></li></ol></li></ol>
+
+    </div>
+</div>
+        </div>
+    
+</div>
+
+
+
+                
+
+            </div>
+
+            
+
+        </div>
+
+        <div class="main-content-footer">
+            <footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2017</span>
+              -
+            
+            2024&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">N3ur051s</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        10 posts in total
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">VISITOR COUNT</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">TOTAL PAGE VIEWS</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">POWERED BY <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a></span>
+            <span class="text-sm lg:block">THEME&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.6.1</a></span>
+        </div>
+        
+        
+            <div>
+                Blog up for <span class="odometer" id="runtime_days" ></span> days <span class="odometer" id="runtime_hours"></span> hrs <span class="odometer" id="runtime_minutes"></span> Min <span class="odometer" id="runtime_seconds"></span> Sec
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+        </div>
+    </div>
+
+    
+        <div class="post-tools">
+            <div class="post-tools-container">
+    <ul class="article-tools-list">
+        <!-- TOC aside toggle -->
+        
+            <li class="right-bottom-tools page-aside-toggle">
+                <i class="fa-regular fa-outdent"></i>
+            </li>
+        
+
+        <!-- go comment -->
+        
+            <li class="go-comment">
+                <i class="fa-regular fa-comments"></i>
+            </li>
+        
+    </ul>
+</div>
+
+        </div>
+    
+
+    <div class="right-side-tools-container">
+        <div class="side-tools-container">
+    <ul class="hidden-tools-list">
+        <li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+            <i class="fa-regular fa-magnifying-glass-plus"></i>
+        </li>
+
+        <li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+            <i class="fa-regular fa-magnifying-glass-minus"></i>
+        </li>
+
+        <li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+            <i class="fa-regular fa-moon"></i>
+        </li>
+
+        <!-- rss -->
+        
+
+        
+
+        <li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+            <i class="fa-regular fa-arrow-down"></i>
+        </li>
+    </ul>
+
+    <ul class="visible-tools-list">
+        <li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+            <i class="fa-regular fa-cog fa-spin"></i>
+        </li>
+        
+            <li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+                <i class="arrow-up fas fa-arrow-up"></i>
+                <span class="percent"></span>
+            </li>
+        
+        
+    </ul>
+</div>
+
+    </div>
+
+    <div class="image-viewer-container">
+    <img src="">
+</div>
+
+
+    
+        <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+          <span class="search-input-field-pre">
+            <i class="fa-solid fa-keyboard"></i>
+          </span>
+            <div class="search-input-container">
+                <input autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       placeholder="Search..."
+                       spellcheck="false"
+                       type="search"
+                       class="search-input"
+                >
+            </div>
+            <span class="popup-btn-close">
+                <i class="fa-solid fa-times"></i>
+            </span>
+        </div>
+        <div id="search-result">
+            <div id="no-result">
+                <i class="fa-solid fa-spinner fa-spin-pulse fa-5x fa-fw"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+
+</main>
+
+
+    
+<script src="/js/libs/Swup.min.js"></script>
+
+<script src="/js/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    const swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+</script>
+
+
+
+
+
+
+
+<script src="/js/tools/imageViewer.js" type="module"></script>
+
+<script src="/js/utils.js" type="module"></script>
+
+<script src="/js/main.js" type="module"></script>
+
+<script src="/js/layouts/navbarShrink.js" type="module"></script>
+
+<script src="/js/tools/scrollTopBottom.js" type="module"></script>
+
+<script src="/js/tools/lightDarkSwitch.js" type="module"></script>
+
+<script src="/js/layouts/categoryList.js" type="module"></script>
+
+
+
+    
+<script src="/js/tools/localSearch.js" type="module"></script>
+
+
+
+
+    
+<script src="/js/tools/codeBlock.js" type="module"></script>
+
+
+
+
+    
+<script src="/js/layouts/lazyload.js" type="module"></script>
+
+
+
+
+    
+<script src="/js/tools/runtime.js"></script>
+
+    
+<script src="/js/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+  
+<script src="/js/libs/Typed.min.js"></script>
+
+  
+<script src="/js/plugins/typed.js" type="module"></script>
+
+
+
+
+
+
+
+
+
+<div class="post-scripts" data-swup-reload-script>
+    
+        
+<script src="/js/tools/tocToggle.js" type="module"></script>
+
+<script src="/js/layouts/toc.js" type="module"></script>
+
+<script src="/js/plugins/tabs.js" type="module"></script>
+
+    
+</div>
+
+
+    <div id="aplayer"></div>
+
+<script src="/js/libs/APlayer.min.js"></script>
+
+
+<script src="/js/plugins/aplayer.js"></script>
+
+
+</body>
+</html>
